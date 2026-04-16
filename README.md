@@ -1,1 +1,1 @@
-# CashX-bot
+# CashX Casino
