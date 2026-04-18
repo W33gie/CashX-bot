@@ -100,6 +100,19 @@ async function handleRequest(req, res) {
       return json(res, 200, { ok: true });
     }
 
+    if (req.method === 'GET' && (url.pathname === '/' || url.pathname === '/index.html')) {
+      const fs = require('fs');
+      const path = require('path');
+      const filePath = path.join(__dirname, 'index.html');
+      if (fs.existsSync(filePath)) {
+        res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+        res.end(fs.readFileSync(filePath));
+      } else {
+        json(res, 404, { error: 'index.html not found' });
+      }
+      return;
+    }
+
     json(res, 404, { error: 'Not found' });
 
   } catch (err) {
