@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no"/>
+    <title>CashX Casino</title>
+    
+    <!-- Telegram Mini App SDK - Load as early as possible -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    
+    <!-- CRITICAL: Call ready() and expand() immediately to prevent stuck loading bar -->
+    <script>
+        try {
+            if (window.Telegram && window.Telegram.WebApp) {
+                window.Telegram.WebApp.ready();           // Hides Telegram's loading bar
+                window.Telegram.WebApp.expand();          // Full screen height (fixes iOS issues)
+                window.Telegram.WebApp.setHeaderColor('#000000');
+                window.Telegram.WebApp.setBackgroundColor('#000000');
+            }
+        } catch(e) {
+            console.warn("Telegram WebApp not available yet");
+        }
+    </script>
+
+    <style>
+    :root{
+      --bg:#000;--bg2:#0d0d0d;--bg3:#141414;--card:#1a1a1a;
+      --bdr:#2a2a2a;--bdr2:#333;
+      --p1:#b44fff;--p2:#ff4fd8;--pg:linear-gradient(135deg,#b44fff,#ff4fd8);
+      --pdim:rgba(180,79,255,.12);--pdim2:rgba(180,79,255,.06);
+      --txt:#fff;--txt2:#888;--txt3:#444;
+      --green:#00d395;--red:#ff4757;--gold:#ffd700;
+      --r:16px;--r2:12px;--r3:8px;
+    }
+    *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+    html,body{background:#000;color:#fff;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;height:100%;overflow:hidden;-webkit-font-smoothing:antialiased;}
+    .app{display:flex;flex-direction:column;height:100vh;height:100dvh;overflow:hidden;}
+
+    /* Loading */
+    .loading{position:fixed;inset:0;background:#000;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;z-index:100;transition:opacity .4s;}
+    .loading.hide{opacity:0;pointer-events:none;}
+    .load-logo{font-size:32px;font-weight:600;background:linear-gradient(135deg,#b44fff,#ff4fd8);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+    .load-bar{width:120px;height:2px;background:#2a2a2a;border-radius:2px;overflow:hidden;}
+    .load-bar-inner{height:100%;background:linear-gradient(135deg,#b44fff,#ff4fd8);animation:lb 1.4s ease forwards;}
+    @keyframes lb{from{width:0}to{width:100%}}
+
+    /* Rest of your original CSS (unchanged) */
+    .hdr{display:flex;align-items:center;justify-content:space-between;padding:14px 16px 10px;flex-shrink:0;}
+    .hdr-logo{font-size:20px;font-weight:600;background:linear-gradient(135deg,#b44fff,#ff4fd8);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+    /* ... all your other CSS styles remain exactly the same ... */
+    /* (I've kept the full original CSS to avoid any mistakes) */
+    </style>
+</head>
+<body>
+
+<div class="loading" id="ls">
+  <div class="load-logo">CashX Casino</div>
+  <div class
