@@ -1,48 +1,22 @@
-/**
-
-- CashX Game — Telegram Bot Backend
-- Entry point — starts all services
-- 
-- SETUP:
-- npm install
-- cp .env.example .env   ← fill in your values
-- node index.js
-  */
-
-require(‘dotenv’).config();
-const { startBot }     = require(’./bot’);
-const { startWatcher } = require(’./watcher’);
-const { startServer }  = require(’./server’);
-const deposits         = require(’./deposits’);
-const accounts         = require(’./accounts’);
-const db               = require(’./db’);
+const db = require('./db');
+const { startBot } = require('./bot');
+const server = require('./server');
+const watcher = require('./watcher');
+const deposits = require('./deposits');
 
 async function main() {
-console.log(‘🎮 CashX Bot starting…’);
-
-await db.init();
-console.log(‘✅ Database ready’);
-
-await deposits.init();
-console.log(‘✅ Deposit engine ready’);
-
-await accounts.init();
-await accounts.processPendingWithdrawals();
-console.log(‘✅ Account system ready’);
-
-startBot();
-console.log(‘✅ Telegram bot listening’);
-
-startServer();
-console.log(‘✅ API server ready’);
-
-await startWatcher();
-console.log(‘✅ Chain watcher running’);
-
-console.log(‘🟢 All systems go’);
+  console.log('CashX Bot starting...');
+  db.init();
+  console.log('Database ready');
+  deposits.init();
+  console.log('Deposit engine ready');
+  startBot();
+  console.log('Telegram bot listening');
+  server.start();
+  console.log('API server ready');
+  watcher.start();
+  console.log('Chain watcher running');
+  console.log('All systems go');
 }
 
-main().catch(err => {
-console.error(‘Fatal startup error:’, err);
-process.exit(1);
-});
+main().catch(console.error);
