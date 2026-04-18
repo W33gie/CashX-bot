@@ -1,6 +1,6 @@
 /**
 
-- bot.js — Telegram bot command handlers
+- bot.js - Telegram bot command handlers
   */
 
 const TelegramBot  = require(‘node-telegram-bot-api’);
