@@ -4,8 +4,9 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no"/>
 <title>CashX Casino</title>
-<script src="https://telegram.org/js/telegram-web-app.js"></script>
-<script>try{window.Telegram.WebApp.ready();window.Telegram.WebApp.expand();}catch(e){}</script>
+<meta name="theme-color" content="#000000"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<script src="https://telegram.org/js/telegram-web-app.js?57"></script>
 
 <style>
 :root{
@@ -18,8 +19,8 @@
   --r:16px;--r2:12px;--r3:8px;
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
-html,body{background:#000;color:#fff;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;height:100%;overflow:hidden;-webkit-font-smoothing:antialiased;}
-.app{display:flex;flex-direction:column;height:100vh;height:100dvh;overflow:hidden;}
+html,body{background:#000;color:#fff;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;height:100%;overflow:hidden;-webkit-font-smoothing:antialiased;overscroll-behavior:none;}
+.app{display:flex;flex-direction:column;height:100vh;height:var(--tg-viewport-stable-height,100dvh);overflow:hidden;padding-top:env(safe-area-inset-top);}
 
 /* Pages */
 .pages{flex:1;position:relative;overflow:hidden;}
@@ -333,6 +334,11 @@ html,body{background:#000;color:#fff;font-family:-apple-system,BlinkMacSystemFon
 .bal-label{font-size:11px;color:#444;text-transform:uppercase;letter-spacing:.5px;}
 .bal-val{font-size:16px;font-weight:600;color:#b44fff;letter-spacing:-.5px;}
 .bal-token{font-size:11px;color:#444;}
+
+/* Hide custom back buttons when Telegram native back button is active */
+body.tg-native .hdr-back{display:none;}
+body.tg-native .hdr{justify-content:flex-end;}
+body.tg-native .hdr .hdr-back ~ *{margin-left:0;}
 </style>
 </head>
 <body>
@@ -850,16 +856,56 @@ html,body{background:#000;color:#fff;font-family:-apple-system,BlinkMacSystemFon
 <div id="toast"></div>
 
 <script>
-const tg=window.Telegram?.WebApp;
-let tgu=tg?.initDataUnsafe?.user||null;
-if(!tgu && tg && tg.initDataUnsafe) tgu=tg.initDataUnsafe.user||null;
-/* UPDATE THIS URL TO YOUR RAILWAY URL */
-  const API='https://cashx-bot-fun.up.railway.app';
+/* ============================================================
+   TELEGRAM MINI APP - CASHX CASINO
+   ============================================================ */
 
-// State
+// --- Telegram helpers (single source of truth) ---
+const TG = window.Telegram?.WebApp || null;
+const tg = TG; // lowercase alias used by account/referral code below
+const IS_TG = !!(TG && TG.initData); // true only in real Telegram client
+let tgu = TG?.initDataUnsafe?.user || null;
+
+const hap = {
+  tap:   () => TG?.HapticFeedback?.selectionChanged?.(),
+  light: () => TG?.HapticFeedback?.impactOccurred?.('light'),
+  med:   () => TG?.HapticFeedback?.impactOccurred?.('medium'),
+  heavy: () => TG?.HapticFeedback?.impactOccurred?.('heavy'),
+  ok:    () => TG?.HapticFeedback?.notificationOccurred?.('success'),
+  warn:  () => TG?.HapticFeedback?.notificationOccurred?.('warning'),
+  err:   () => TG?.HapticFeedback?.notificationOccurred?.('error'),
+};
+
+// CloudStorage wrapper (gracefully falls back to localStorage on web)
+const cloud = {
+  get(key){
+    return new Promise(res => {
+      if (TG?.CloudStorage) {
+        try { TG.CloudStorage.getItem(key, (err, val) => res(err ? null : val)); return; } catch(e){}
+      }
+      try { res(localStorage.getItem('cx_'+key)); } catch(e){ res(null); }
+    });
+  },
+  set(key, val){
+    return new Promise(res => {
+      if (TG?.CloudStorage) {
+        try { TG.CloudStorage.setItem(key, String(val), () => res(true)); return; } catch(e){}
+      }
+      try { localStorage.setItem('cx_'+key, String(val)); res(true); } catch(e){ res(false); }
+    });
+  },
+};
+
+/* UPDATE THIS URL TO YOUR RAILWAY URL */
+const API = 'https://cashx-bot-fun.up.railway.app';
+const BOT_USERNAME = 'CashX_Ai_bot'; // single source of truth for bot handle
+const BOT_URL = 't.me/' + BOT_USERNAME;
+
+// --- State ---
 let hNums=[],hTierIdx=0,hEntType='p',rolls=0,wins=0;
 let vNum=null,vTier_=0,vEnt_='p',cdTimer;
 let lm=0,ls=1;
+let currentPage='p-lobby';
 const TL=['100K','500K','1M'],TV=[100000,500000,1000000];
 const FC={1:'f1',2:'f2',3:'f3',4:'f4',5:'f5',6:'f6'};
 const LM=[
@@ -874,54 +920,205 @@ const demos=[
   {id:3,name:'@dicemaster',pick:1,tier:2,entry:'pls',exp:890},
 ];
 
-// Init
-window.addEventListener('DOMContentLoaded',()=>{
-  try{if(tg){tg.ready();tg.expand();tg.setHeaderColor('#000000');tg.setBackgroundColor('#000000');}}catch(e){}
+// --- Startup ---
+function boot(){
+  if (IS_TG) document.body.classList.add('tg-native');
+  try{
+    if(TG){
+      TG.ready();
+      TG.expand();
+      // New: disable vertical swipe-to-close on iOS (SDK 7.7+)
+      if (typeof TG.disableVerticalSwipes === 'function') TG.disableVerticalSwipes();
+      // Request fullscreen where available (SDK 8+)
+      try { TG.requestFullscreen && TG.requestFullscreen(); } catch(e){}
+      TG.setHeaderColor('#000000');
+      TG.setBackgroundColor('#000000');
+      if (typeof TG.setBottomBarColor === 'function') TG.setBottomBarColor('#0d0d0d');
+      // Telegram BackButton wiring
+      if (TG.BackButton) {
+        TG.BackButton.onClick(() => {
+          // On a game/sub-page, go back to lobby. On lobby, do nothing.
+          if (currentPage !== 'p-lobby') navTo('home');
+        });
+      }
+    }
+  }catch(e){ console.warn('TG init failed:', e); }
+
+  // Populate user chip
   if(tgu){
-    const n=tgu.username?'@'+tgu.username:tgu.first_name;
-    const i=(tgu.first_name||'G')[0].toUpperCase();
-    ['uAv',''].forEach(()=>{});
-    document.getElementById('uAv').textContent=i;
-    document.getElementById('uNm').textContent=n;
-    document.getElementById('mTg').textContent=n;
-    document.getElementById('mTgId').textContent=tgu.id;
+    const n = tgu.username ? '@'+tgu.username : (tgu.first_name || 'Player');
+    const i = (tgu.first_name || tgu.username || 'G')[0].toUpperCase();
+    const uAv=document.getElementById('uAv'); if(uAv) uAv.textContent=i;
+    const uNm=document.getElementById('uNm'); if(uNm) uNm.textContent=n;
+  } else {
+    // Not inside Telegram — show a friendly hint and disable auth-gated flows
+    const uNm=document.getElementById('uNm');
+    if(uNm) uNm.textContent = 'Preview mode';
+    // Non-blocking banner at the top of the lobby scroll
+    const lobbyScroll = document.querySelector('#p-lobby .scroll');
+    if(lobbyScroll && !document.getElementById('noTgBanner')){
+      const banner = document.createElement('div');
+      banner.id = 'noTgBanner';
+      banner.style.cssText = 'background:rgba(255,215,0,.08);border:1px solid rgba(255,215,0,.25);border-radius:12px;padding:12px 14px;margin-bottom:12px;font-size:12px;color:#ffd700;line-height:1.5;';
+      banner.innerHTML = '<strong>Preview mode.</strong> Open this in Telegram via <a href="https://' + BOT_URL + '" style="color:#ffd700;text-decoration:underline;">@' + BOT_USERNAME + '</a> to deposit, play, and withdraw.';
+      lobbyScroll.insertBefore(banner, lobbyScroll.firstChild);
+    }
   }
-  rChal();animBurn();initFaq();
+
+  // Kick off dynamic content
+  rChal();
+  animBurn();
+  initFaq();
   loadAccount();
-  function showApp(){
-    try{const l=document.getElementById('ls');if(l){l.classList.add('hide');setTimeout(()=>{l.style.display='none';},400);}}catch(e){}
-    try{const a=document.getElementById('app');if(a){a.style.display='flex';a.style.visibility='visible';a.style.opacity='1';}}catch(e){}
-    try{if(tg)tg.ready();}catch(e){}
-  }
-  setTimeout(showApp, 800);
-  setTimeout(showApp, 2000);
-  setTimeout(showApp, 4000);
-});
+  restorePrefs();
+
+  // Hide splash as soon as the app is ready — no more 2/4-second fallbacks
+  requestAnimationFrame(() => {
+    const l = document.getElementById('ls');
+    const a = document.getElementById('app');
+    if (a) { a.style.display='flex'; a.style.opacity='1'; }
+    if (l) {
+      l.classList.add('hide');
+      setTimeout(() => { l.style.display='none'; }, 400);
+    }
+  });
+}
+
+// Run after DOM is ready; if Telegram SDK arrives later, still fine — TG may be null
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', boot);
+} else {
+  boot();
+}
+
+// Re-sync viewport height on Telegram viewport changes
+if (TG) {
+  try {
+    TG.onEvent('viewportChanged', () => {
+      // --tg-viewport-stable-height is auto-set by SDK; this just forces reflow.
+      document.body.style.minHeight = (TG.viewportStableHeight || window.innerHeight) + 'px';
+    });
+  } catch(e){}
+}
+
+
+// Restore saved preferences from CloudStorage
+async function restorePrefs(){
+  try{
+    const diceTier = await cloud.get('dice_tier');
+    if(diceTier !== null && diceTier !== undefined){
+      const i = parseInt(diceTier, 10);
+      if(i>=0 && i<=2){
+        const btns = document.querySelectorAll('#hT .tb');
+        if(btns[i]){
+          btns.forEach(b=>b.classList.remove('sel'));
+          btns[i].classList.add('sel');
+          hTierIdx = i;
+          uOdds(); uRollBtn();
+        }
+      }
+    }
+    const hiloTier = await cloud.get('hilo_tier');
+    if(hiloTier !== null && hiloTier !== undefined){
+      const i = parseInt(hiloTier, 10);
+      if(i>=0 && i<=2){
+        const btns = document.querySelectorAll('#hlTiers .tb');
+        if(btns[i]){
+          btns.forEach(b=>b.classList.remove('sel'));
+          btns[i].classList.add('sel');
+          hlTierIdx = i;
+        }
+      }
+    }
+  }catch(e){}
+}
 
 // Navigation
 function go(pg){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active','behind'));
   document.getElementById(pg).classList.add('active');
-  tg?.HapticFeedback?.impactOccurred('light');
+  currentPage = pg;
+  // Page-specific init
+  if (pg === 'p-jackpot' && typeof jpInit === 'function') jpInit();
+  // Show Telegram native back button on sub-pages
+  if (TG?.BackButton) {
+    if (pg === 'p-lobby') TG.BackButton.hide();
+    else TG.BackButton.show();
+  }
+  syncMainButton();
+  hap.light();
 }
 function back(pg){
-  document.querySelectorAll('.page').forEach(function(p){p.classList.remove('active','behind');});
-  document.getElementById('p-lobby').classList.add('active');
-  document.querySelectorAll('.nb').forEach(function(b){b.classList.remove('active');});
-  document.getElementById('nb-home').classList.add('active');
-  if(tg&&tg.HapticFeedback)tg.HapticFeedback.selectionChanged();
+  navTo('home');
 }
 function nav(t){navTo(t);}
 function navTo(t){
   document.querySelectorAll('.page').forEach(function(p){p.classList.remove('active','behind');});
-  if(t==='me'){document.getElementById('p-me').classList.add('active');loadAccountPage();initReferral();}
-  else if(t==='how'){document.getElementById('p-how').classList.add('active');}
-  else{document.getElementById('p-lobby').classList.add('active');}
+  if(t==='me'){document.getElementById('p-me').classList.add('active');currentPage='p-me';loadAccountPage();initReferral();}
+  else if(t==='how'){document.getElementById('p-how').classList.add('active');currentPage='p-how';}
+  else{document.getElementById('p-lobby').classList.add('active');currentPage='p-lobby';}
   document.querySelectorAll('.nb').forEach(function(b){b.classList.remove('active');});
   var nbid=t==='home'?'nb-home':t==='me'?'nb-me':'nb-how';
   document.getElementById(nbid).classList.add('active');
-  tg?.HapticFeedback?.selectionChanged();
+  // Back button state: hidden on main tabs, visible on game pages only
+  if (TG?.BackButton) TG.BackButton.hide();
+  syncMainButton();
+  hap.tap();
 }
+
+/* MainButton sync — mirrors the visible in-page primary button to Telegram's native MainButton.
+   We DON'T replace the in-page button because preview/browser mode needs it. Both work together. */
+function syncMainButton(){
+  if (!TG?.MainButton) return;
+  const mb = TG.MainButton;
+
+  // Map page -> the ID of the primary action button in that page's .pin bar
+  let btnId = null;
+  if (currentPage === 'p-dice') {
+    // Roll btn OR challenge btn depending on sub-mode
+    const rBtn = document.getElementById('rollBtn');
+    const cBtn = document.getElementById('chalBtn');
+    if (rBtn && rBtn.style.display !== 'none') btnId = 'rollBtn';
+    else if (cBtn && cBtn.style.display !== 'none') btnId = 'chalBtn';
+  } else if (currentPage === 'p-lottery') btnId = 'lBtn';
+  else if (currentPage === 'p-hilo')     btnId = 'hlStartBtn';
+  else if (currentPage === 'p-jackpot')  btnId = 'jpBuyBtn';
+
+  if (!btnId) { mb.hide(); return; }
+  const btn = document.getElementById(btnId);
+  if (!btn) { mb.hide(); return; }
+
+  // Mirror text + disabled state
+  mb.setText((btn.textContent || '').trim().replace(/->$/, '').trim() || 'Play');
+  if (btn.disabled) mb.disable(); else mb.enable();
+
+  // Re-bind click — onClick stacks listeners, so we replace with offClick first
+  if (mb.offClick) {
+    try { mb.offClick(_mainClickHandler); } catch(e){}
+  }
+  _mainClickHandler = () => { btn.click(); };
+  mb.onClick(_mainClickHandler);
+
+  // Style to match brand
+  try { mb.setParams({ color: '#b44fff', text_color: '#ffffff' }); } catch(e){}
+  mb.show();
+}
+let _mainClickHandler = null;
+
+// Watch for in-page button state changes (disabled/text) so MainButton stays in sync
+(function watchBtns(){
+  const ids = ['rollBtn','chalBtn','lBtn','hlStartBtn','jpBuyBtn'];
+  const run = () => {
+    ids.forEach(id => {
+      const el = document.getElementById(id);
+      if (!el || el.__mbObs) return;
+      el.__mbObs = new MutationObserver(() => { if (currentPage) syncMainButton(); });
+      el.__mbObs.observe(el, { attributes: true, childList: true, characterData: true, subtree: true });
+    });
+  };
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', run);
+  else run();
+})();
 
 // Burn counter
 function animBurn(){
@@ -952,7 +1149,8 @@ function dMode(m){
   document.getElementById('rollBtn').style.display=m==='h'?'block':'none';
   const ag=document.getElementById('vAG').style.display!=='none';
   document.getElementById('chalBtn').style.display=m==='v'&&!ag?'block':'none';
-  tg?.HapticFeedback?.selectionChanged();
+  syncMainButton();
+  hap.tap();
 }
 
 // VS House
@@ -960,7 +1158,7 @@ function tn(n,el){
   const i=hNums.indexOf(n);
   if(i>-1){hNums.splice(i,1);el.classList.remove('sel');}
   else{if(hNums.length>=3){toast('Max 3 numbers','err');return;}hNums.push(n);el.classList.add('sel');}
-  uOdds();uRollBtn();tg?.HapticFeedback?.selectionChanged();
+  uOdds();uRollBtn();hap.tap();
 }
 function uOdds(){
   const n=hNums.length,odds=['-','16.7%','33.3%','50%'],mx=['-','5x','1.8x','1.4x'];
@@ -973,10 +1171,10 @@ function uRollBtn(){
   b.textContent=hNums.length>0?('Roll - '+TL[hTierIdx]+' CASHX ->'):('Roll the dice ->');
 }
 function setHEnt(t){} // deprecated - CASHX only
-function setHTier(i,el){hTierIdx=i;document.querySelectorAll('#hT .tb').forEach(b=>b.classList.remove('sel'));el.classList.add('sel');uOdds();uRollBtn();tg?.HapticFeedback?.selectionChanged();}
+function setHTier(i,el){hTierIdx=i;document.querySelectorAll('#hT .tb').forEach(b=>b.classList.remove('sel'));el.classList.add('sel');uOdds();uRollBtn();hap.tap();cloud.set('dice_tier',i);}
 function roll(){
   if(hNums.length===0){toast('Pick at least one number','err');return;}
-  tg?.HapticFeedback?.impactOccurred('heavy');g('rollBtn').disabled=true;
+  hap.heavy();g('rollBtn').disabled=true;
   const d=g('hDice');d.className='dice fu';void d.offsetWidth;d.classList.add('rolling');
   g('hRC').className='rc';document.querySelectorAll('#hNG .nb2').forEach(b=>b.classList.remove('rolled'));
   let c=0;const iv=setInterval(()=>{sf(d,Math.floor(Math.random()*6)+1);if(++c>=12){
@@ -985,7 +1183,7 @@ function roll(){
     const w=hNums.includes(r);d.classList.add(w?'won':'lost');
     document.querySelectorAll('#hNG .nb2').forEach((b,i)=>{if(i+1===r)b.classList.add('rolled');});
     showHR(r,w);rolls++;if(w)wins++;g('sRolls').textContent=rolls;g('sWins').textContent=wins;
-    tg?.HapticFeedback?.notificationOccurred(w?'success':'error');g('rollBtn').disabled=false;
+    w?hap.ok():hap.err();g('rollBtn').disabled=false;
   }},70);
 }
 function showHR(r,w){
@@ -1006,12 +1204,12 @@ function tvn(n,el){
   g('vPO').textContent='Bet '+t+' CASHX -> win 1.6x in CASHX';
   g('vPM').textContent='1.6x';
   g('chalBtn').disabled=false;g('chalBtn').textContent='Challenge with '+n+' CASHX ->';
-  tg?.HapticFeedback?.selectionChanged();
+  hap.tap();
 }
 function vEnt(t){} // deprecated - CASHX only
-function vTier(i,el){vTier_=i;document.querySelectorAll('#vT .tb').forEach(b=>b.classList.remove('sel'));el.classList.add('sel');if(vNum)tvn(vNum,document.querySelectorAll('#vNG .nb2')[vNum-1]);tg?.HapticFeedback?.selectionChanged();}
-function chal(){if(!vNum){toast('Pick a number first','err');return;}tg?.HapticFeedback?.impactOccurred('heavy');toast('Challenge created!','ok');sAG(vNum,null);}
-function jChallenge(c){tg?.HapticFeedback?.impactOccurred('medium');const mp=vNum||(c.pick===6?1:c.pick+1);toast(`Joining - you picked ${mp}`,'ok');sAG(mp,c);}
+function vTier(i,el){vTier_=i;document.querySelectorAll('#vT .tb').forEach(b=>b.classList.remove('sel'));el.classList.add('sel');if(vNum)tvn(vNum,document.querySelectorAll('#vNG .nb2')[vNum-1]);hap.tap();}
+function chal(){if(!vNum){toast('Pick a number first','err');return;}hap.heavy();toast('Challenge created!','ok');sAG(vNum,null);}
+function jChallenge(c){hap.med();const mp=vNum||(c.pick===6?1:c.pick+1);toast(`Joining - you picked ${mp}`,'ok');sAG(mp,c);}
 function sAG(my,ch){
   g('vCJ').style.display='none';g('vAG').style.display='block';g('chalBtn').style.display='none';
   const md=g('myD');md.className='dice';sf(md,my);
@@ -1041,7 +1239,7 @@ function simH2H(my,opp){
       sf(md,my);sf(od,opp);
       const md2=Math.abs(my-r),od2=Math.abs(opp-r),iW=md2<od2,iT=md2===od2;
       md.classList.add(iW?'won':iT?'neutral':'lost');od.classList.add(!iW&&!iT?'won':iT?'neutral':'lost');
-      showRev(my,opp,r,iW,iT);showH2HR(iW,iT,r,my,opp);tg?.HapticFeedback?.notificationOccurred(iW?'success':'error');
+      showRev(my,opp,r,iW,iT);showH2HR(iW,iT,r,my,opp);iW?hap.ok():hap.err();
   }},70);
 }
 function showRev(my,opp,r,iW,iT){
@@ -1059,27 +1257,27 @@ function showH2HR(iW,iT,r,my,opp){
   addTM('CashX Bot',iW?'🏆 Winner!':iT?'🤝 Dead even!':'💀 Rekt.');
 }
 function lag(){clearInterval(cdTimer);g('vAG').style.display='none';g('vCJ').style.display='block';g('chalBtn').style.display='block';const m=g('myD');m.className='dice';su(m);const o=g('opD');o.className='dice neutral';su(o);}
-function qt(msg){sTM(msg);tg?.HapticFeedback?.selectionChanged();}
+function qt(msg){sTM(msg);hap.tap();}
 function st(){const el=g('tiInp');const msg=el.value.trim();if(!msg)return;sTM(msg);el.value='';}
-function sTM(msg){const n=tgu?(tgu.username||tgu.first_name):'You';addTM(n,msg,true);tg?.HapticFeedback?.impactOccurred('light');}
+function sTM(msg){const n=tgu?(tgu.username||tgu.first_name):'You';addTM(n,msg,true);hap.light();}
 function addTM(n,t,me=false){const b=g('tmBox');const d=document.createElement('div');d.className=`tm ${me?'me':''}`;d.innerHTML=`<span class="tn">${n}</span><span class="tt">${t}</span>`;b.appendChild(d);b.scrollTop=b.scrollHeight;}
 function rChal(){const l=g('vCL');l.innerHTML='';demos.forEach(c=>{const m=Math.floor(c.exp/60),s=c.exp%60;const d=document.createElement('div');d.className='cc';d.innerHTML=`<div class="cc-top"><div class="cc-av">${c.name[1].toUpperCase()}</div><div style="flex:1"><div class="cc-nm">${c.name}</div><div class="cc-pt">${TL[c.tier]} ${c.entry.toUpperCase()}</div></div><div class="cc-pk">Picked ${c.pick}</div></div><div class="cc-bot"><div class="cc-ti">Expires <span>${m}m ${s}s</span></div><button class="cc-jb" onclick='jChallenge(${JSON.stringify(c)})'>Join -></button></div>`;l.appendChild(d);});}
 
 // Lottery
-function lMode(i,el){lm=i;document.querySelectorAll('#lMG .mp').forEach(p=>p.classList.remove('sel'));el.classList.add('sel');const m=LM[i];g('lPW').textContent=m.w;g('lPR').textContent=m.r;g('lPB').textContent=m.b;g('lSM').textContent=m.l;g('lSE').textContent=m.e;g('lSW').textContent=m.w;tg?.HapticFeedback?.selectionChanged();}
+function lMode(i,el){lm=i;document.querySelectorAll('#lMG .mp').forEach(p=>p.classList.remove('sel'));el.classList.add('sel');const m=LM[i];g('lPW').textContent=m.w;g('lPR').textContent=m.r;g('lPB').textContent=m.b;g('lSM').textContent=m.l;g('lSE').textContent=m.e;g('lSW').textContent=m.w;hap.tap();}
 function lAct(){
   if(ls===1){
     const addr='0x'+Array.from(crypto.getRandomValues(new Uint8Array(20))).map(b=>b.toString(16).padStart(2,'0')).join('');
     g('lDA').textContent=addr;g('lAmt').textContent=LM[lm].e;
     g('lS1').style.display='none';g('lS2').style.display='block';ls=2;sLS(2);
-    g('lBtn').textContent="I've sent the CASHX ->";tg?.HapticFeedback?.impactOccurred('medium');
+    g('lBtn').textContent="I've sent the CASHX ->";hap.med();
   }else if(ls===2){
     g('lS2').style.display='none';g('lS3').style.display='block';ls=3;sLS(3);
     g('lBtn').textContent='Watching for deposit...';g('lBtn').disabled=true;
-    toast('Watching for your deposit!','ok');tg?.HapticFeedback?.impactOccurred('heavy');
+    toast('Watching for your deposit!','ok');hap.heavy();
   }
 }
-function lJoin(id){g('lGID').value=id;g('lS1').scrollIntoView({behavior:'smooth'});tg?.HapticFeedback?.selectionChanged();}
+function lJoin(id){g('lGID').value=id;g('lS1').scrollIntoView({behavior:'smooth'});hap.tap();}
 function sLS(n){
   for(let i=1;i<=3;i++){const d=g(`ls${i}`);if(i<n){d.className='sdot dn';d.textContent='v';}else if(i===n){d.className='sdot act';d.textContent=i;}else{d.className='sdot';d.textContent=i;}}
   if(g('ll1'))g('ll1').className='sline'+(n>1?' dn':'');
@@ -1099,7 +1297,7 @@ var REFERRAL_BONUS_PCT = 5; // 5% of referred user first deposit
 function initReferral(){
   if(!tgu) return;
   referralCode = 'ref_' + tgu.id;
-  var link = 't.me/CashX_Ai_bot?start=' + referralCode;
+  var link = BOT_URL + '?start=' + referralCode;
   var el = document.getElementById('refLink');
   if(el) el.textContent = link;
   // Load referral stats
@@ -1109,10 +1307,10 @@ function initReferral(){
 }
 
 function copyRefLink(){
-  if(!tgu){ toast('Login with Telegram first','err'); return; }
-  var link = 't.me/CashX_Ai_bot?start=ref_' + tgu.id;
+  if(!tgu){ toast('Open in Telegram first','err'); return; }
+  var link = BOT_URL + '?start=ref_' + tgu.id;
   navigator.clipboard.writeText(link)
-    .then(function(){ toast('Referral link copied!','ok'); if(tg&&tg.HapticFeedback)tg.HapticFeedback.notificationOccurred('success'); })
+    .then(function(){ toast('Referral link copied!','ok'); hap.ok(); })
     .catch(function(){ toast('Copy failed','err'); });
 }
 
@@ -1133,7 +1331,7 @@ async function loadReferralStats(){
 
 async function checkReferral(){
   // Telegram passes start param via initDataUnsafe
-  if(!tg || !tg.initDataUnsafe) return;
+  if(!tg || !tg.initDataUnsafe || !tgu) return;
   var startParam = tg.initDataUnsafe.start_param || '';
   if(!startParam.startsWith('ref_')) return;
   var referrerId = startParam.replace('ref_','');
@@ -1234,18 +1432,34 @@ function renderTxHistory(txs){
 function meCopyAddr(){
   if(!accountAddress){toast('Address loading...','err');return;}
   navigator.clipboard.writeText(accountAddress)
-    .then(function(){toast('Address copied','ok');if(tg&&tg.HapticFeedback)tg.HapticFeedback.notificationOccurred('success');})
+    .then(function(){toast('Address copied','ok');hap.ok();})
     .catch(function(){toast('Copy failed','err');});
 }
 
 async function meWithdraw(){
   var amt=document.getElementById('meWithdrawAmt').value.trim();
   var addr=document.getElementById('meWithdrawAddr').value.trim();
-  if(!amt||!addr){toast('Enter amount and address','err');return;}
-  if(!addr.match(/^0x[0-9a-fA-F]{40}$/)){toast('Invalid address','err');return;}
-  if(!tgu){toast('Login with Telegram first','err');return;}
+  if(!amt||!addr){toast('Enter amount and address','err');hap.err();return;}
+  if(!addr.match(/^0x[0-9a-fA-F]{40}$/)){toast('Invalid address','err');hap.err();return;}
+  if(!tgu){toast('Open in Telegram first','err');return;}
   var bal=parseFloat(accountBalance)||0;
-  if(parseFloat(amt)>bal){toast('Insufficient balance','err');return;}
+  var amtNum=parseFloat(amt);
+  if(!amtNum||amtNum<=0){toast('Enter a valid amount','err');hap.err();return;}
+  if(amtNum>bal){toast('Insufficient balance','err');hap.err();return;}
+
+  // Use Telegram native confirm for destructive action
+  var confirmMsg='Withdraw '+fmtC(amtNum)+' CASHX to\n'+addr.slice(0,10)+'...'+addr.slice(-6)+'?';
+  var doWithdraw=function(){ submitWithdraw(amt,addr); };
+  if(TG && typeof TG.showConfirm==='function'){
+    TG.showConfirm(confirmMsg, function(ok){ if(ok) doWithdraw(); });
+  } else {
+    if(window.confirm(confirmMsg)) doWithdraw();
+  }
+}
+
+async function submitWithdraw(amt,addr){
+  var btn=document.querySelector('[onclick="meWithdraw()"]');
+  if(btn){btn.disabled=true;btn.textContent='Submitting...';}
   try{
     var res=await fetch(API+'/account/withdraw',{
       method:'POST',
@@ -1257,13 +1471,17 @@ async function meWithdraw(){
       toast('Withdrawal submitted!','ok');
       document.getElementById('meWithdrawAmt').value='';
       document.getElementById('meWithdrawAddr').value='';
-      if(tg&&tg.HapticFeedback)tg.HapticFeedback.notificationOccurred('success');
+      hap.ok();
       await loadAccountPage();
     }else{
       toast(data.error||'Withdrawal failed','err');
+      hap.err();
     }
   }catch(e){
     toast('Network error','err');
+    hap.err();
+  }finally{
+    if(btn){btn.disabled=false;btn.textContent='Withdraw';}
   }
 }
 
@@ -1301,6 +1519,8 @@ function hlSetTier(i,el){
   hlTierIdx=i;
   document.querySelectorAll('#hlTiers .tb').forEach(function(b){b.classList.remove('sel');});
   el.classList.add('sel');
+  cloud.set('hilo_tier',i);
+  hap.tap();
 }
 function hlStart(){
   hlCurrentNum=Math.floor(Math.random()*13)+1;
@@ -1319,7 +1539,7 @@ function hlStart(){
   document.getElementById('hlHighBtn').disabled=false;
   document.getElementById('hlLowBtn').disabled=false;
   document.getElementById('hlStartBtn').textContent='Deal again ->';
-  if(tg&&tg.HapticFeedback)tg.HapticFeedback.impactOccurred('medium');
+  hap.med();
 }
 function hlCardLabel(n){
   var labels={1:'A',11:'J',12:'Q',13:'K'};
@@ -1375,7 +1595,7 @@ function hlGuess(guess){
       document.getElementById('hlStartBtn').textContent='Deal card to start ->';
     },900);
   }
-  if(tg&&tg.HapticFeedback)tg.HapticFeedback.notificationOccurred(won?'success':tie?'warning':'error');
+  won?hap.ok():tie?hap.warn():hap.err();
 }
 function hlUpdateCurrentCard(){
   var card=document.getElementById('hlCurrentCard');
@@ -1419,9 +1639,10 @@ var jpDrawSeconds=7980; // 2h 14m
 var jpTimer;
 
 function jpInit(){
-  // Generate referral link
-  var tgId=tgu?tgu.id:'unknown';
-  document.getElementById('jpRefLink').textContent='t.me/CashX_Ai_bot?start=ref_'+tgId;
+  // Generate referral link (or helpful fallback)
+  var linkEl = document.getElementById('jpRefLink');
+  if (tgu) linkEl.textContent = BOT_URL + '?start=ref_' + tgu.id;
+  else     linkEl.textContent = 'Open in Telegram to get your link';
   // Reset state
   jpTicketCount_=1;
   document.getElementById('jpTicketCount').textContent='1';
@@ -1459,7 +1680,7 @@ function jpAdjust(delta){
   document.getElementById('jpTotalCost').textContent=fmtC(cost)+' CASHX';
   var chance=((jpTicketCount_/(jpTotalTickets+jpTicketCount_-1))*100).toFixed(2);
   document.getElementById('jpWinChance').textContent=chance+'%';
-  if(tg&&tg.HapticFeedback)tg.HapticFeedback.selectionChanged();
+  hap.tap();
 }
 function jpBuy(){
   var addr='0x'+Array.from(crypto.getRandomValues(new Uint8Array(20))).map(function(b){return b.toString(16).padStart(2,'0');}).join('');
@@ -1469,7 +1690,7 @@ function jpBuy(){
   document.getElementById('jpDepositBox').style.display='block';
   document.getElementById('jpBuyBtn').textContent='I sent the CASHX ->';
   document.getElementById('jpBuyBtn').onclick=jpConfirm;
-  if(tg&&tg.HapticFeedback)tg.HapticFeedback.impactOccurred('medium');
+  hap.med();
 }
 function jpConfirm(){
   document.getElementById('jpMyTickets').innerHTML='<div style="font-size:28px;font-weight:600;color:#b44fff;">'+jpTicketCount_+'</div><div style="font-size:12px;color:#444;margin-top:4px;">tickets entered</div>';
@@ -1477,7 +1698,7 @@ function jpConfirm(){
   document.getElementById('jpBuyBtn').textContent='Buy more tickets ->';
   document.getElementById('jpBuyBtn').onclick=jpBuy;
   toast('Watching for deposit!','ok');
-  if(tg&&tg.HapticFeedback)tg.HapticFeedback.notificationOccurred('success');
+  hap.ok();
 }
 function jpCopyAddr(){
   navigator.clipboard.writeText(document.getElementById('jpDepAddr').textContent)
@@ -1497,7 +1718,7 @@ function toggleFaq(el){
     var open=ans.style.display==='block';
     ans.style.display=open?'none':'block';
     arr.style.transform=open?'':'rotate(180deg)';
-    if(tg&&tg.HapticFeedback)tg.HapticFeedback.selectionChanged();
+    hap.tap();
   }catch(e){}
 }
 // Attach FAQ click handlers after DOM ready
