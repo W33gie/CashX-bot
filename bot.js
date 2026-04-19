@@ -9,7 +9,7 @@ function startBot() {
     return { inline_keyboard: [[{ text: label, web_app: { url: NETLIFY_URL } }]] };
   }
   function groupBtn(label) {
-    return { inline_keyboard: [[{ text: label, url: 'https://t.me/CashX_Ai_bot?start=open' }]] };
+    return { inline_keyboard: [[{ text: label, url: 'https://t.me/CashX_fun_bot?start=open' }]] };
   }
   bot.onText(/\/start/, function(msg) {
     var id = String(msg.from.id);
