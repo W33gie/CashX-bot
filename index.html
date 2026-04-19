@@ -1,79 +1,339 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8"/>
-    <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no"/>
-    <title>CashX Casino</title>
-    
-    <!-- Telegram Mini App SDK - must load early -->
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    
-    <!-- CRITICAL FIX: Call ready() and expand() as early as possible to stop the stuck loading bar -->
-    <script>
-        try {
-            if (window.Telegram && window.Telegram.WebApp) {
-                window.Telegram.WebApp.ready();           // Tells Telegram to hide its loading bar
-                window.Telegram.WebApp.expand();          // Makes app full height (fixes iOS issues)
-                window.Telegram.WebApp.setHeaderColor('#000000');
-                window.Telegram.WebApp.setBackgroundColor('#000000');
-            }
-        } catch(e) {
-            console.warn("Telegram WebApp not available yet");
-        }
-    </script>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no"/>
+<title>CashX Casino</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script>try{window.Telegram.WebApp.ready();window.Telegram.WebApp.expand();}catch(e){}</script>
 
-    <style>
-    :root{
-      --bg:#000;--bg2:#0d0d0d;--bg3:#141414;--card:#1a1a1a;
-      --bdr:#2a2a2a;--bdr2:#333;
-      --p1:#b44fff;--p2:#ff4fd8;--pg:linear-gradient(135deg,#b44fff,#ff4fd8);
-      --pdim:rgba(180,79,255,.12);--pdim2:rgba(180,79,255,.06);
-      --txt:#fff;--txt2:#888;--txt3:#444;
-      --green:#00d395;--red:#ff4757;--gold:#ffd700;
-      --r:16px;--r2:12px;--r3:8px;
-    }
-    *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
-    html,body{background:#000;color:#fff;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;height:100%;overflow:hidden;-webkit-font-smoothing:antialiased;}
-    .app{display:flex;flex-direction:column;height:100vh;height:100dvh;overflow:hidden;}
+<style>
+:root{
+  --bg:#000;--bg2:#0d0d0d;--bg3:#141414;--card:#1a1a1a;
+  --bdr:#2a2a2a;--bdr2:#333;
+  --p1:#b44fff;--p2:#ff4fd8;--pg:linear-gradient(135deg,#b44fff,#ff4fd8);
+  --pdim:rgba(180,79,255,.12);--pdim2:rgba(180,79,255,.06);
+  --txt:#fff;--txt2:#888;--txt3:#444;
+  --green:#00d395;--red:#ff4757;--gold:#ffd700;
+  --r:16px;--r2:12px;--r3:8px;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{background:#000;color:#fff;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;height:100%;overflow:hidden;-webkit-font-smoothing:antialiased;}
+.app{display:flex;flex-direction:column;height:100vh;height:100dvh;overflow:hidden;}
 
-    /* Pages */
-    .pages{flex:1;position:relative;overflow:hidden;}
-    .page{display:none;flex-direction:column;background:#000;overflow:hidden;height:100%;width:100%;}
-    .page.active{display:flex;}
-    .page.behind{display:none;}
+/* Pages */
+.pages{flex:1;position:relative;overflow:hidden;}
+.page{display:none;flex-direction:column;background:#000;overflow:hidden;height:100%;width:100%;}
+.page.active{display:flex;}
+.page.behind{display:none;}
 
-    /* Loading */
-    .loading{position:fixed;inset:0;background:#000;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;z-index:100;transition:opacity .4s;}
-    .loading.hide{opacity:0;pointer-events:none;}
-    .load-logo{font-size:32px;font-weight:600;background:linear-gradient(135deg,#b44fff,#ff4fd8);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
-    .load-bar{width:120px;height:2px;background:#2a2a2a;border-radius:2px;overflow:hidden;}
-    .load-bar-inner{height:100%;background:linear-gradient(135deg,#b44fff,#ff4fd8);animation:lb 1.4s ease forwards;}
-    @keyframes lb{from{width:0}to{width:100%}}
+/* Loading */
+.loading{position:fixed;inset:0;background:#000;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;z-index:100;transition:opacity .4s;}
+.loading.hide{opacity:0;pointer-events:none;}
+.load-logo{font-size:32px;font-weight:600;background:linear-gradient(135deg,#b44fff,#ff4fd8);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.load-bar{width:120px;height:2px;background:#2a2a2a;border-radius:2px;overflow:hidden;}
+.load-bar-inner{height:100%;background:linear-gradient(135deg,#b44fff,#ff4fd8);animation:lb 1.4s ease forwards;}
+@keyframes lb{from{width:0}to{width:100%}}
 
-    /* Header */
-    .hdr{display:flex;align-items:center;justify-content:space-between;padding:14px 16px 10px;flex-shrink:0;}
-    .hdr-logo{font-size:20px;font-weight:600;background:linear-gradient(135deg,#b44fff,#ff4fd8);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
-    .hdr-back{background:none;border:none;color:#888;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:13px;font-weight:500;padding:6px 0;cursor:pointer;display:flex;align-items:center;gap:6px;}
-    .hdr-back svg{width:16px;height:16px;stroke:currentColor;stroke-width:2;fill:none;stroke-linecap:round;stroke-linejoin:round;}
-    .user-chip{display:flex;align-items:center;gap:6px;background:#1a1a1a;border:1px solid #2a2a2a;border-radius:20px;padding:5px 10px 5px 6px;}
-    .u-av{width:22px;height:22px;border-radius:50%;background:linear-gradient(135deg,#b44fff,#ff4fd8);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;color:#fff;}
-    .u-nm{font-size:12px;font-weight:500;color:#888;max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+/* Header */
+.hdr{display:flex;align-items:center;justify-content:space-between;padding:14px 16px 10px;flex-shrink:0;}
+.hdr-logo{font-size:20px;font-weight:600;background:linear-gradient(135deg,#b44fff,#ff4fd8);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.hdr-back{background:none;border:none;color:#888;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:13px;font-weight:500;padding:6px 0;cursor:pointer;display:flex;align-items:center;gap:6px;}
+.hdr-back svg{width:16px;height:16px;stroke:currentColor;stroke-width:2;fill:none;stroke-linecap:round;stroke-linejoin:round;}
+.user-chip{display:flex;align-items:center;gap:6px;background:#1a1a1a;border:1px solid #2a2a2a;border-radius:20px;padding:5px 10px 5px 6px;}
+.u-av{width:22px;height:22px;border-radius:50%;background:linear-gradient(135deg,#b44fff,#ff4fd8);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;color:#fff;}
+.u-nm{font-size:12px;font-weight:500;color:#888;max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 
-    /* Scroll */
-    .scroll{flex:1;overflow-y:auto;overflow-x:hidden;padding:0 14px 120px;}
-    .scroll::-webkit-scrollbar{display:none;}
+/* Scroll */
+.scroll{flex:1;overflow-y:auto;overflow-x:hidden;padding:0 14px 120px;}
+.scroll::-webkit-scrollbar{display:none;}
 
-    /* All your other original styles (unchanged) */
-    .sl{font-size:11px;font-weight:500;color:#444;letter-spacing:.5px;text-transform:uppercase;margin:16px 0 10px;}
-    .divider{height:1px;background:#2a2a2a;margin:16px 0;}
-    .burn-banner{background:linear-gradient(135deg,rgba(180,79,255,.15),rgba(255,79,216,.15));border:1px solid rgba(180,79,255,.3);border-radius:16px;padding:16px;display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;}
-    /* ... (all remaining CSS from your original file is kept exactly the same below) ... */
-    .game-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;}
-    .gt{background:#1a1a1a;border:1px solid #2a2a2a;border-radius:16px;padding:16px 14px;cursor:pointer;transition:all .2s;min-height:130px;display:flex;flex-direction:column;justify-content:space-between;position:relative;overflow:hidden;}
-    /* Continuing with all your original CSS - no changes to styles */
-    .nav{display:grid;grid-template-columns:repeat(3,1fr);background:#0d0d0d;border-top:1px solid #2a2a2a;flex-shrink:0;}
-    /* ... rest of your CSS remains identical ... */
-    </style>
+/* Labels */
+.sl{font-size:11px;font-weight:500;color:#444;letter-spacing:.5px;text-transform:uppercase;margin:16px 0 10px;}
+.sl:first-child{margin-top:4px;}
+.divider{height:1px;background:#2a2a2a;margin:16px 0;}
+
+/* Burn banner */
+.burn-banner{background:linear-gradient(135deg,rgba(180,79,255,.15),rgba(255,79,216,.15));border:1px solid rgba(180,79,255,.3);border-radius:16px;padding:16px;display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;}
+.bb-label{font-size:10px;color:#444;letter-spacing:.5px;text-transform:uppercase;margin-bottom:4px;}
+.bb-amount{font-size:28px;font-weight:600;letter-spacing:-1px;background:linear-gradient(135deg,#b44fff,#ff4fd8);-webkit-background-clip:text;-webkit-text-fill-color:transparent;line-height:1;}
+.bb-sub{font-size:11px;color:#444;margin-top:3px;}
+
+/* Game tiles */
+.game-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;}
+.gt{background:#1a1a1a;border:1px solid #2a2a2a;border-radius:16px;padding:16px 14px;cursor:pointer;transition:all .2s;min-height:130px;display:flex;flex-direction:column;justify-content:space-between;position:relative;overflow:hidden;}
+.gt::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(180,79,255,.06),transparent);opacity:0;transition:opacity .2s;}
+.gt:active::before{opacity:1;}
+.gt:active{border-color:#b44fff;transform:scale(.98);}
+.gt.soon{opacity:.4;cursor:default;}
+.gt.soon:active{transform:none;border-color:#2a2a2a;}
+.gt-icon{font-size:28px;margin-bottom:8px;}
+.gt-name{font-size:14px;font-weight:600;margin-bottom:3px;}
+.gt-desc{font-size:11px;color:#444;line-height:1.4;}
+.badge{display:inline-flex;align-items:center;font-size:9px;font-weight:600;letter-spacing:.5px;padding:3px 8px;border-radius:20px;margin-top:8px;text-transform:uppercase;}
+.badge.live{background:rgba(0,211,149,.1);color:#00d395;border:1px solid rgba(0,211,149,.2);}
+.badge.hot{background:rgba(255,71,87,.1);color:#ff4757;border:1px solid rgba(255,71,87,.2);}
+.badge.soon{background:#141414;color:#444;border:1px solid #2a2a2a;}
+
+/* Live strip */
+.live-strip{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;margin-bottom:16px;}
+.live-strip::-webkit-scrollbar{display:none;}
+.lc{background:#1a1a1a;border:1px solid #2a2a2a;border-radius:12px;padding:12px;flex:0 0 140px;cursor:pointer;transition:border-color .15s;}
+.lc:active{border-color:#b44fff;}
+.lc-game{font-size:10px;color:#444;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;}
+.lc-pot{font-size:18px;font-weight:600;letter-spacing:-.5px;line-height:1;}
+.lc-slots{display:flex;gap:3px;margin-top:8px;}
+.lc-pip{height:3px;flex:1;background:#333;border-radius:2px;}
+.lc-pip.f{background:#b44fff;}
+.lc-pip.y{background:#ff4fd8;}
+.lc-st{font-size:10px;margin-top:6px;}
+.lc-st.open{color:#00d395;}
+.lc-st.fill{color:#ffd700;}
+
+/* Recent wins */
+.wi{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid #2a2a2a;}
+.wi:last-child{border-bottom:none;}
+.wi-ic{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;}
+.wi-nm{font-size:13px;font-weight:500;}
+.wi-gm{font-size:11px;color:#444;margin-top:1px;}
+.wi-am{font-size:14px;font-weight:600;color:#00d395;margin-left:auto;}
+
+/* Nav */
+.nav{display:grid;grid-template-columns:repeat(3,1fr);background:#0d0d0d;border-top:1px solid #2a2a2a;flex-shrink:0;}
+.nb{background:none;border:none;color:#444;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:10px;font-weight:500;padding:10px 4px 12px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px;transition:color .2s;position:relative;}
+.nb.active{color:#b44fff;}
+.nb.active::before{content:'';position:absolute;top:0;left:20%;right:20%;height:2px;background:linear-gradient(135deg,#b44fff,#ff4fd8);border-radius:0 0 2px 2px;}
+.nb-ic{font-size:18px;line-height:1;}
+
+/* Mode toggle */
+.mode-toggle{display:flex;background:#141414;border:1px solid #2a2a2a;border-radius:20px;padding:3px;gap:2px;}
+.mtog{background:none;border:none;color:#888;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:11px;font-weight:500;padding:5px 14px;border-radius:16px;cursor:pointer;transition:all .2s;}
+.mtog.active{background:linear-gradient(135deg,#b44fff,#ff4fd8);color:#fff;}
+
+/* Dice */
+.dice-area{display:flex;justify-content:center;gap:16px;margin-bottom:20px;}
+.dice-wrap{display:flex;flex-direction:column;align-items:center;gap:6px;}
+.dice-sub{font-size:10px;color:#444;letter-spacing:.5px;text-transform:uppercase;}
+.dice{width:80px;height:80px;background:#1a1a1a;border:2px solid #333;border-radius:16px;display:grid;padding:12px;transition:border-color .3s,box-shadow .3s;}
+.dice.rolling{animation:shake .08s linear infinite;}
+.dice.won{border-color:#00d395;box-shadow:0 0 20px rgba(0,211,149,.3);}
+.dice.lost{border-color:#ff4757;box-shadow:0 0 20px rgba(255,71,87,.3);}
+.dice.neutral{border-color:#333;}
+@keyframes shake{0%{transform:translate(0,0) rotate(0)}25%{transform:translate(2px,-2px) rotate(4deg)}50%{transform:translate(-2px,2px) rotate(-4deg)}75%{transform:translate(2px,2px) rotate(2deg)}100%{transform:translate(0,0) rotate(0)}}
+.dot{width:10px;height:10px;border-radius:50%;background:#b44fff;box-shadow:0 0 4px rgba(180,79,255,.5);}
+.dice.won .dot{background:#00d395;box-shadow:0 0 4px rgba(0,211,149,.5);}
+.dice.lost .dot{background:#ff4757;box-shadow:0 0 4px rgba(255,71,87,.5);}
+.f1{place-items:center;}
+.f2{grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;}
+.f2 .dot:nth-child(1){grid-column:1;grid-row:1;align-self:start;}
+.f2 .dot:nth-child(2){grid-column:2;grid-row:2;align-self:end;justify-self:end;}
+.f3{grid-template-columns:1fr 1fr 1fr;grid-template-rows:1fr 1fr 1fr;}
+.f3 .dot:nth-child(1){grid-column:1;grid-row:1;}
+.f3 .dot:nth-child(2){grid-column:2;grid-row:2;justify-self:center;align-self:center;}
+.f3 .dot:nth-child(3){grid-column:3;grid-row:3;align-self:end;justify-self:end;}
+.f4{grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:8px;}
+.f5{grid-template-columns:1fr 1fr 1fr;grid-template-rows:1fr 1fr 1fr;gap:4px;}
+.f5 .dot:nth-child(1){grid-column:1;grid-row:1;}
+.f5 .dot:nth-child(2){grid-column:3;grid-row:1;justify-self:end;}
+.f5 .dot:nth-child(3){grid-column:2;grid-row:2;justify-self:center;align-self:center;}
+.f5 .dot:nth-child(4){grid-column:1;grid-row:3;align-self:end;}
+.f5 .dot:nth-child(5){grid-column:3;grid-row:3;justify-self:end;align-self:end;}
+.f6{grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr 1fr;gap:6px;}
+.fu{place-items:center;}
+.fu .dot{width:14px;height:14px;background:#333;box-shadow:none;border-radius:3px;}
+.vs-badge{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#b44fff,#ff4fd8);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;flex-shrink:0;align-self:center;margin-top:-16px;}
+
+/* Number grid */
+.ng{display:grid;grid-template-columns:repeat(6,1fr);gap:6px;margin-bottom:16px;}
+.nb2{aspect-ratio:1;background:#141414;border:1px solid #333;border-radius:8px;color:#888;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:18px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;position:relative;}
+.nb2.sel{background:rgba(180,79,255,.12);border-color:#b44fff;color:#b44fff;}
+.nb2.sel::after{content:'';position:absolute;bottom:3px;left:50%;transform:translateX(-50%);width:4px;height:4px;border-radius:50%;background:#b44fff;}
+.nb2.rolled{border-color:#ffd700;color:#ffd700;background:rgba(255,215,0,.08);}
+
+/* Payout preview */
+.pp{background:#141414;border:1px solid #2a2a2a;border-radius:12px;padding:12px 14px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;}
+.pp-l .pp-lb{font-size:11px;color:#444;margin-bottom:2px;}
+.pp-l .pp-od{font-size:13px;color:#888;}
+.pp-r .pp-mx{font-size:26px;font-weight:600;letter-spacing:-1px;background:linear-gradient(135deg,#b44fff,#ff4fd8);-webkit-background-clip:text;-webkit-text-fill-color:transparent;line-height:1;}
+.pp-r .pp-sb{font-size:10px;color:#444;text-align:right;margin-top:2px;}
+
+/* Entry / tiers */
+.et-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px;}
+.et{background:#141414;border:1px solid #2a2a2a;border-radius:8px;padding:12px;text-align:center;cursor:pointer;transition:all .15s;}
+.et.sel{border-color:#b44fff;background:rgba(180,79,255,.12);}
+.et .et-l{font-size:13px;font-weight:600;color:#888;}
+.et.sel .et-l{color:#b44fff;}
+.et .et-s{font-size:10px;color:#444;margin-top:3px;}
+.tiers{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:16px;}
+.tb{background:#141414;border:1px solid #2a2a2a;border-radius:8px;padding:10px 6px;text-align:center;cursor:pointer;transition:all .15s;}
+.tb.sel{border-color:#b44fff;background:rgba(180,79,255,.12);}
+.tb .tb-a{font-size:14px;font-weight:600;color:#fff;}
+.tb.sel .tb-a{color:#b44fff;}
+.tb .tb-l{font-size:10px;color:#444;margin-top:2px;}
+
+/* Result */
+.rc{border-radius:16px;padding:20px;text-align:center;margin-bottom:16px;display:none;}
+.rc.won{background:rgba(0,211,149,.08);border:1px solid rgba(0,211,149,.3);}
+.rc.lost{background:rgba(255,71,87,.08);border:1px solid rgba(255,71,87,.3);}
+.rc.tie{background:rgba(255,215,0,.08);border:1px solid rgba(255,215,0,.3);}
+.rc.show{display:block;}
+.rc-em{font-size:40px;margin-bottom:8px;display:block;}
+.rc-ti{font-size:18px;font-weight:600;margin-bottom:4px;}
+.rc-ti.won{color:#00d395;}
+.rc-ti.lost{color:#ff4757;}
+.rc-ti.tie{color:#ffd700;}
+.rc-am{font-size:32px;font-weight:600;letter-spacing:-1px;background:linear-gradient(135deg,#b44fff,#ff4fd8);-webkit-background-clip:text;-webkit-text-fill-color:transparent;line-height:1;margin-bottom:4px;}
+.rc-sb{font-size:12px;color:#444;}
+
+/* Burn note */
+.bn{display:flex;align-items:center;gap:6px;background:rgba(255,71,87,.06);border:1px solid rgba(255,71,87,.15);border-radius:8px;padding:8px 12px;font-size:11px;color:#ff4757;margin-bottom:12px;}
+
+/* Countdown */
+.cdb{background:#1a1a1a;border:1px solid #2a2a2a;border-radius:12px;padding:12px 14px;margin-bottom:12px;}
+.cdb-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
+.cdb-lb{font-size:11px;color:#444;text-transform:uppercase;letter-spacing:.5px;}
+.cdb-tm{font-size:22px;font-weight:600;letter-spacing:-1px;background:linear-gradient(135deg,#b44fff,#ff4fd8);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.cdb-pr{height:3px;background:#2a2a2a;border-radius:2px;overflow:hidden;}
+.cdb-fi{height:100%;background:linear-gradient(135deg,#b44fff,#ff4fd8);border-radius:2px;transition:width 1s linear;}
+
+/* Reveal */
+.rev-card{background:#1a1a1a;border:1px solid #2a2a2a;border-radius:16px;padding:16px;margin-bottom:12px;display:none;}
+.rev-card.show{display:block;}
+.rev-top{display:flex;align-items:center;justify-content:space-between;}
+.rev-pl{text-align:center;flex:1;}
+.rp-nm{font-size:11px;color:#444;margin-bottom:6px;}
+.rp-pk{font-size:36px;font-weight:700;color:#fff;}
+.rp-pk.won{color:#00d395;}
+.rp-pk.lost{color:#ff4757;}
+.rp-lb{font-size:10px;margin-top:4px;color:#444;}
+.rp-lb.won{color:#00d395;}
+.rp-lb.lost{color:#ff4757;}
+.rev-ro{text-align:center;flex:0 0 60px;}
+.rr-lb{font-size:9px;color:#444;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px;}
+.rr-nm{font-size:40px;}
+
+/* Challenge cards */
+.cc{background:#1a1a1a;border:1px solid #2a2a2a;border-radius:12px;padding:14px;margin-bottom:8px;cursor:pointer;transition:border-color .15s;}
+.cc:active{border-color:#b44fff;}
+.cc-top{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+.cc-av{width:36px;height:36px;border-radius:50%;background:rgba(180,79,255,.12);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:600;color:#b44fff;flex-shrink:0;}
+.cc-nm{font-size:13px;font-weight:600;}
+.cc-pt{font-size:11px;color:#444;margin-top:2px;}
+.cc-pk{background:rgba(180,79,255,.12);border:1px solid #b44fff;border-radius:20px;padding:4px 10px;font-size:12px;font-weight:600;color:#b44fff;}
+.cc-bot{display:flex;align-items:center;justify-content:space-between;}
+.cc-ti{font-size:11px;color:#444;}
+.cc-ti span{color:#ffd700;}
+.cc-jb{background:linear-gradient(135deg,#b44fff,#ff4fd8);border:none;color:#fff;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:12px;font-weight:600;padding:6px 14px;border-radius:20px;cursor:pointer;}
+
+/* Trash */
+.tm-box{background:#141414;border:1px solid #2a2a2a;border-radius:12px;padding:10px;max-height:110px;overflow-y:auto;margin-bottom:8px;display:flex;flex-direction:column;gap:6px;}
+.tm-box::-webkit-scrollbar{display:none;}
+.tm{font-size:12px;line-height:1.4;}
+.tm .tn{font-weight:600;color:#b44fff;margin-right:4px;}
+.tm.me .tn{color:#ff4fd8;}
+.tm .tt{color:#888;}
+.tq{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;}
+.tqb{background:#141414;border:1px solid #333;border-radius:20px;color:#888;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:11px;padding:5px 10px;cursor:pointer;transition:all .15s;white-space:nowrap;}
+.tqb:active{border-color:#b44fff;color:#b44fff;}
+.ti-row{display:flex;gap:8px;}
+.ti{flex:1;background:#141414;border:1px solid #333;color:#fff;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:13px;padding:10px 12px;border-radius:8px;outline:none;}
+.ti:focus{border-color:#b44fff;}
+.ti::placeholder{color:#444;}
+.ts-btn{background:linear-gradient(135deg,#b44fff,#ff4fd8);border:none;color:#fff;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:13px;font-weight:600;padding:10px 16px;border-radius:8px;cursor:pointer;}
+
+/* Lottery */
+.mode-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;}
+.mp{background:#141414;border:1px solid #2a2a2a;border-radius:12px;padding:14px 12px;cursor:pointer;transition:all .2s;position:relative;}
+.mp.sel{border-color:#b44fff;background:rgba(180,79,255,.06);}
+.mp .mp-p{font-size:22px;font-weight:600;letter-spacing:-.5px;line-height:1;color:#fff;}
+.mp.sel .mp-p{color:#b44fff;}
+.mp .mp-s{font-size:11px;color:#444;margin-top:4px;}
+.mp .mp-t{font-size:10px;font-weight:500;color:#ff4fd8;margin-top:8px;}
+.sd{position:absolute;top:8px;right:8px;width:6px;height:6px;border-radius:50%;background:linear-gradient(135deg,#b44fff,#ff4fd8);display:none;}
+.mp.sel .sd{display:block;}
+.pr-row{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid #2a2a2a;}
+.pr-row:last-child{border-bottom:none;padding-bottom:0;}
+.pr-row:first-child{padding-top:0;}
+.pr-l{display:flex;align-items:center;gap:10px;}
+.pr-ic{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:15px;}
+.pr-ic.g{background:rgba(255,215,0,.1);}
+.pr-ic.s{background:rgba(160,160,160,.1);}
+.pr-ic.r{background:rgba(255,71,87,.1);}
+.pr-lb{font-size:13px;font-weight:500;}
+.pr-sb{font-size:11px;color:#444;margin-top:1px;}
+.pr-am{font-size:15px;font-weight:600;}
+.pr-am.g{color:#ffd700;}
+.pr-am.s{color:#aaa;}
+.pr-am.r{color:#ff4757;}
+
+/* Deposit */
+.dep-box{background:#141414;border:1px solid #333;border-radius:12px;padding:14px;margin-bottom:10px;}
+.dep-lb{font-size:11px;color:#444;margin-bottom:6px;}
+.dep-ad{font-size:12px;color:#fff;font-family:monospace;word-break:break-all;line-height:1.6;}
+.dep-am{display:flex;justify-content:space-between;margin-top:10px;padding-top:10px;border-top:1px solid #2a2a2a;}
+.dep-al{font-size:12px;color:#444;}
+.dep-av{font-size:16px;font-weight:600;color:#b44fff;}
+
+/* Step indicator */
+.steps{display:flex;align-items:center;margin-bottom:20px;}
+.sdot{width:28px;height:28px;border-radius:50%;background:#141414;border:1px solid #333;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;color:#444;flex-shrink:0;transition:all .3s;}
+.sdot.act{background:linear-gradient(135deg,#b44fff,#ff4fd8);border-color:transparent;color:#fff;}
+.sdot.dn{background:#00d395;border-color:transparent;color:#fff;}
+.sline{flex:1;height:1px;background:#2a2a2a;}
+.sline.dn{background:#00d395;}
+
+/* Info rows */
+.ir{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #2a2a2a;font-size:13px;}
+.ir:last-child{border-bottom:none;}
+.ik{color:#444;}
+.iv{color:#fff;font-weight:500;}
+
+/* Stat boxes */
+.sg{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;}
+.sb{background:#1a1a1a;border:1px solid #2a2a2a;border-radius:12px;padding:14px;text-align:center;}
+.sv{font-size:26px;font-weight:600;letter-spacing:-.5px;line-height:1;}
+.slb{font-size:11px;color:#444;margin-top:4px;}
+
+/* Toggle */
+.tr{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid #2a2a2a;}
+.tr:last-child{border-bottom:none;}
+.tr-lb{font-size:14px;color:#888;}
+.tog{width:44px;height:26px;background:#333;border-radius:13px;position:relative;cursor:pointer;transition:background .2s;flex-shrink:0;}
+.tog.on{background:#b44fff;}
+.tog::after{content:'';position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#fff;transition:transform .2s;}
+.tog.on::after{transform:translateX(18px);}
+
+/* Buttons */
+.bp{width:100%;background:linear-gradient(135deg,#b44fff,#ff4fd8);border:none;color:#fff;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:15px;font-weight:600;padding:15px;border-radius:12px;cursor:pointer;transition:opacity .2s;margin-bottom:8px;}
+.bp:active{opacity:.85;}
+.bp:disabled{opacity:.4;cursor:not-allowed;}
+.bs{width:100%;background:transparent;border:1px solid #333;color:#888;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:14px;font-weight:500;padding:13px;border-radius:12px;cursor:pointer;transition:all .2s;margin-bottom:8px;}
+.bs:active{border-color:#b44fff;color:#b44fff;}
+.cp{width:100%;background:rgba(180,79,255,.12);border:1px solid #b44fff;color:#b44fff;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:13px;font-weight:600;padding:12px;border-radius:12px;cursor:pointer;margin-bottom:8px;}
+.inp{width:100%;background:#141414;border:1px solid #333;color:#fff;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:14px;padding:13px 14px;border-radius:8px;outline:none;margin-bottom:16px;}
+.inp:focus{border-color:#b44fff;}
+.inp::placeholder{color:#444;}
+
+/* Pinned bar */
+.pin{position:fixed;bottom:0;left:0;right:0;background:#000;border-top:1px solid #2a2a2a;padding:12px 14px;padding-bottom:max(12px,env(safe-area-inset-bottom));z-index:50;}
+
+/* Toast */
+#toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%) translateY(8px);background:#1a1a1a;border:1px solid #333;color:#fff;font-size:13px;font-weight:500;padding:10px 18px;border-radius:20px;opacity:0;transition:all .25s;z-index:300;pointer-events:none;white-space:nowrap;}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+#toast.ok{border-color:#00d395;color:#00d395;}
+#toast.err{border-color:#ff4757;color:#ff4757;}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.faq-item{background:#1a1a1a;border:1px solid #2a2a2a;border-radius:12px;padding:14px;margin-bottom:8px;cursor:pointer;}
+.faq-q{display:flex;justify-content:space-between;align-items:center;}
+.faq-arr{font-size:16px;color:#444;transition:transform .2s;flex-shrink:0;margin-left:8px;}
+.faq-a{display:none;font-size:12px;color:#888;line-height:1.7;margin-top:10px;}
+
+.bal-bar{display:flex;align-items:center;gap:6px;padding:0 16px 10px;flex-shrink:0;}
+.bal-label{font-size:11px;color:#444;text-transform:uppercase;letter-spacing:.5px;}
+.bal-val{font-size:16px;font-weight:600;color:#b44fff;letter-spacing:-.5px;}
+.bal-token{font-size:11px;color:#444;}
+</style>
 </head>
 <body>
 
@@ -85,102 +345,1170 @@
 <div class="app" id="app" style="display:none">
 <div class="pages" id="pages">
 
-<!-- All your original page content (lobby, dice, lottery, me, hilo, jackpot, how) remains 100% unchanged -->
 <!-- ========== LOBBY ========== -->
 <div class="page active" id="p-lobby">
-  <!-- ... your full lobby HTML ... -->
   <div class="hdr">
     <div class="hdr-logo">CashX Casino</div>
     <div class="user-chip"><div class="u-av" id="uAv">?</div><div class="u-nm" id="uNm">Guest</div></div>
   </div>
-  <!-- Balance bar and all other content from your original file -->
-  <!-- (to keep this response reasonable, I'm confirming all your original HTML pages are kept exactly as you provided) -->
+  <!-- Balance bar -->
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:0 14px 10px;">
+    <div style="display:flex;align-items:center;gap:8px;">
+      <div style="font-size:11px;color:#444;text-transform:uppercase;letter-spacing:.5px;">Balance</div>
+      <div style="font-size:18px;font-weight:600;color:#b44fff;letter-spacing:-.5px;" id="headerBalance">--</div>
+      <div style="font-size:11px;color:#444;">CASHX</div>
+    </div>
+    <button onclick="navTo('me')" style="background:rgba(180,79,255,.12);border:1px solid #b44fff;border-radius:20px;color:#b44fff;font-family:-apple-system,sans-serif;font-size:11px;font-weight:600;padding:5px 12px;cursor:pointer;">Deposit / Withdraw</button>
+  </div>
+  <div class="scroll">
+    <div class="burn-banner">
+      <div><div class="bb-label">Total CASHX burned</div><div class="bb-amount" id="burnCount">0</div><div class="bb-sub">across all games . forever</div></div>
+      <div style="font-size:32px">🔥</div>
+    </div>
+    <div class="sl">Games</div>
+    <div class="game-grid">
+      <div class="gt" onclick="go('p-lottery')"><div><div class="gt-icon">🎰</div><div class="gt-name">Lottery</div><div class="gt-desc">5 players . winner takes 3x CASHX CASHX</div></div><div><div class="badge live">Live</div><div style="font-size:11px;color:#b44fff;font-weight:600;margin-top:4px">500K-10M CASHX</div></div></div>
+      <div class="gt" onclick="go('p-dice')"><div><div class="gt-icon">🎲</div><div class="gt-name">Dice</div><div class="gt-desc">vs House or 1v1 . instant</div></div><div><div class="badge hot">Hot</div><div style="font-size:11px;color:#b44fff;font-weight:600;margin-top:4px">100K-1M CASHX</div></div></div>
+      <div class="gt" onclick="go('p-hilo')"><div><div class="gt-icon">🃏</div><div class="gt-name">Hi-Lo</div><div class="gt-desc">Higher or lower, instant rounds</div></div><div><div class="badge live">Live</div><div style="font-size:11px;color:#b44fff;font-weight:600;margin-top:4px">100K-1M CASHX</div></div></div>
+      <div class="gt" onclick="go('p-jackpot')"><div><div class="gt-icon">🎯</div><div class="gt-name">Jackpot</div><div class="gt-desc">Buy tickets, win the pool</div></div><div><div class="badge hot">Hot</div><div style="font-size:11px;color:#b44fff;font-weight:600;margin-top:4px">100K CASHX/ticket</div></div></div>
+    </div>
+    <div class="sl">Live games</div>
+    <div class="live-strip">
+      <div class="lc" onclick="go('p-lottery')"><div class="lc-game">Lottery #12</div><div class="lc-pot">500K CASHX</div><div class="lc-slots"><div class="lc-pip y"></div><div class="lc-pip f"></div><div class="lc-pip f"></div><div class="lc-pip"></div><div class="lc-pip"></div></div><div class="lc-st open">3/5 joined</div></div>
+      <div class="lc" onclick="go('p-lottery')"><div class="lc-game">Lottery #13</div><div class="lc-pot">5M CASHX</div><div class="lc-slots"><div class="lc-pip f"></div><div class="lc-pip f"></div><div class="lc-pip f"></div><div class="lc-pip f"></div><div class="lc-pip"></div></div><div class="lc-st fill">4/5 - filling!</div></div>
+      <div class="lc" onclick="go('p-dice')"><div class="lc-game">Dice 1v1 #8</div><div class="lc-pot">500K CASHX</div><div class="lc-slots"><div class="lc-pip f"></div><div class="lc-pip"></div></div><div class="lc-st open">Waiting opponent</div></div>
+    </div>
+    <div class="sl">Recent wins</div>
+    <div style="background:#1a1a1a;border:1px solid #2a2a2a;border-radius:16px;padding:4px 14px;margin-bottom:16px;">
+      <div class="wi"><div class="wi-ic" style="background:rgba(0,211,149,.1)">🏆</div><div><div class="wi-nm">@pulse_whale</div><div class="wi-gm">Lottery #9 . 500K CASHX pot</div></div><div class="wi-am">+300K CASHX</div></div>
+      <div class="wi"><div class="wi-ic" style="background:rgba(180,79,255,.1)">🎲</div><div><div class="wi-nm">@richhard</div><div class="wi-gm">Dice vs House . 1M CASHX bet</div></div><div class="wi-am">+5M CASHX</div></div>
+      <div class="wi"><div class="wi-ic" style="background:rgba(255,215,0,.1)">🥈</div><div><div class="wi-nm">@dicemaster</div><div class="wi-gm">Lottery #10 . runner-up</div></div><div class="wi-am">+100K CASHX</div></div>
+    </div>
+  </div>
+  <nav class="nav">
+    <button class="nb active" id="nb-home" onclick="navTo('home')"><span class="nb-ic" style="font-size:14px">&#9633;</span>Lobby</button>
+    <button class="nb" id="nb-me" onclick="navTo('me')"><span class="nb-ic" style="font-size:14px">&#9673;</span>Me</button>
+    <button class="nb" id="nb-how" onclick="navTo('how')"><span class="nb-ic" style="font-size:14px">?</span>How to play</button>
+  </nav>
 </div>
 
-<!-- Dice, Lottery, Me, Hi-Lo, Jackpot, How pages are all unchanged from your paste -->
+<!-- ========== DICE ========== -->
+<div class="page" id="p-dice">
+  <div class="hdr">
+    <button class="hdr-back" onclick="back('p-dice')"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>Back</button>
+    <div class="mode-toggle"><button class="mtog active" id="dtH" onclick="dMode('h')">vs House</button><button class="mtog" id="dtV" onclick="dMode('v')">1v1</button></div>
+  </div>
+  <div class="bal-bar"><div class="bal-label">Balance</div><div class="bal-val" id="diceBalance">--</div><div class="bal-token">CASHX</div></div>
+  <div class="scroll">
+    <!-- VS HOUSE -->
+    <div id="dH">
+      <div class="dice-area"><div class="dice fu" id="hDice"><div class="dot"></div></div></div>
+      <div class="rc" id="hRC"><span class="rc-em" id="hRCe"></span><div class="rc-ti" id="hRCt"></div><div class="rc-am" id="hRCa"></div><div class="rc-sb" id="hRCs"></div></div>
+      <div class="sl">Pick your numbers (1-3)</div>
+      <div class="ng" id="hNG">
+        <button class="nb2" onclick="tn(1,this)">1</button><button class="nb2" onclick="tn(2,this)">2</button><button class="nb2" onclick="tn(3,this)">3</button>
+        <button class="nb2" onclick="tn(4,this)">4</button><button class="nb2" onclick="tn(5,this)">5</button><button class="nb2" onclick="tn(6,this)">6</button>
+      </div>
+      <div class="pp"><div class="pp-l"><div class="pp-lb" id="hPL">Pick a number to see odds</div><div class="pp-od" id="hPO">-</div></div><div class="pp-r"><div class="pp-mx" id="hPM">-</div><div class="pp-sb">payout</div></div></div>
+      <div class="sl">Bet size</div>
+      <div class="tiers" id="hT"><div class="tb sel" onclick="setHTier(0,this)"><div class="tb-a">100K</div><div class="tb-l">CASHX</div></div><div class="tb" onclick="setHTier(1,this)"><div class="tb-a">500K</div><div class="tb-l">CASHX</div></div><div class="tb" onclick="setHTier(2,this)"><div class="tb-a">1M</div><div class="tb-l">CASHX</div></div></div>
+      <div class="bn">🔥 Losing bets burned forever - reducing CASHX supply</div>
+      <div class="divider"></div>
+      <div class="sl">Stats</div>
+      <div class="sg"><div class="sb"><div class="sv" id="sRolls">0</div><div class="slb">Rolls</div></div><div class="sb"><div class="sv" id="sWins">0</div><div class="slb">Wins</div></div></div>
+    </div>
+    <!-- 1v1 -->
+    <div id="dV" style="display:none">
+      <!-- Active game -->
+      <div id="vAG" style="display:none">
+        <div class="cdb"><div class="cdb-top"><div class="cdb-lb" id="cdLb">Waiting for opponent</div><div class="cdb-tm" id="cdTm">50:00</div></div><div class="cdb-pr"><div class="cdb-fi" id="cdFi" style="width:100%"></div></div></div>
+        <div class="dice-area">
+          <div class="dice-wrap"><div class="dice fu" id="myD"><div class="dot"></div></div><div class="dice-sub">You</div></div>
+          <div class="vs-badge">VS</div>
+          <div class="dice-wrap"><div class="dice neutral fu" id="opD"><div class="dot"></div></div><div class="dice-sub">Opponent</div></div>
+        </div>
+        <div class="rev-card" id="revC">
+          <div class="rev-top">
+            <div class="rev-pl"><div class="rp-nm">You picked</div><div class="rp-pk" id="rvM">-</div><div class="rp-lb" id="rvML">-</div></div>
+            <div class="rev-ro"><div class="rr-lb">Rolled</div><div class="rr-nm" id="rvR">🎲</div></div>
+            <div class="rev-pl"><div class="rp-nm">They picked</div><div class="rp-pk" id="rvO">-</div><div class="rp-lb" id="rvOL">-</div></div>
+          </div>
+        </div>
+        <div class="rc" id="vRC"><span class="rc-em" id="vRCe"></span><div class="rc-ti" id="vRCt"></div><div class="rc-am" id="vRCa"></div><div class="rc-sb" id="vRCs"></div></div>
+        <div class="sl">Trash talk</div>
+        <div class="tm-box" id="tmBox"><div class="tm"><span class="tn">CashX Bot</span><span class="tt">Game on 🎲</span></div></div>
+        <div class="tq">
+          <button class="tqb" onclick="qt('😤 You scared?')">😤 Scared?</button>
+          <button class="tqb" onclick="qt('🎲 Lucky roll incoming')">🎲 Lucky</button>
+          <button class="tqb" onclick="qt('🔥 Get burned')">🔥 Burned</button>
+          <button class="tqb" onclick="qt('💀 GG already')">💀 GG</button>
+          <button class="tqb" onclick="qt('🏆 Easy money')">🏆 Easy</button>
+        </div>
+        <div class="ti-row" style="margin-bottom:12px"><input class="ti" id="tiInp" placeholder="Say something..." maxlength="80"/><button class="ts-btn" onclick="st()">Send</button></div>
+        <button class="bs" onclick="lag()">Leave game</button>
+      </div>
+      <!-- Create/join -->
+      <div id="vCJ">
+        <div class="dice-area"><div class="dice-wrap"><div class="dice fu" id="vPD"><div class="dot"></div></div><div class="dice-sub">Your pick</div></div></div>
+        <div class="sl">Pick your number</div>
+        <div class="ng" id="vNG"><button class="nb2" onclick="tvn(1,this)">1</button><button class="nb2" onclick="tvn(2,this)">2</button><button class="nb2" onclick="tvn(3,this)">3</button><button class="nb2" onclick="tvn(4,this)">4</button><button class="nb2" onclick="tvn(5,this)">5</button><button class="nb2" onclick="tvn(6,this)">6</button></div>
+        <div class="pp"><div class="pp-l"><div class="pp-lb" id="vPL">Pick a number to see odds</div><div class="pp-od" id="vPO">-</div></div><div class="pp-r"><div class="pp-mx" id="vPM">-</div><div class="pp-sb">if you win</div></div></div>
+        <div class="sl">Bet size</div>
+        <div class="tiers" id="vT"><div class="tb sel" onclick="vTier(0,this)"><div class="tb-a">100K</div><div class="tb-l">CASHX</div></div><div class="tb" onclick="vTier(1,this)"><div class="tb-a">500K</div><div class="tb-l">CASHX</div></div><div class="tb" onclick="vTier(2,this)"><div class="tb-a">1M</div><div class="tb-l">CASHX</div></div></div>
+        <div class="bn">🔥 Winner takes 1.6x - 20% burned forever</div>
+        <div class="divider"></div>
+        <div class="sl">Open challenges</div>
+        <div id="vCL"></div>
+      </div>
+    </div>
+  </div>
+  <div class="pin">
+    <button class="bp" id="rollBtn" onclick="roll()" disabled style="margin-bottom:0;display:block">Roll the dice -></button>
+    <button class="bp" id="chalBtn" onclick="chal()" disabled style="margin-bottom:0;display:none">Create challenge -></button>
+  </div>
+</div>
+
+<!-- ========== LOTTERY ========== -->
+<div class="page" id="p-lottery">
+  <div class="hdr">
+    <button class="hdr-back" onclick="back('p-lottery')"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>Back</button>
+    <div style="font-size:14px;font-weight:600">Lottery</div>
+  </div>
+  <div class="bal-bar"><div class="bal-label">Balance</div><div class="bal-val" id="lotteryBalance">--</div><div class="bal-token">CASHX</div></div>
+  <div class="scroll">
+    <div class="sl" style="margin-top:4px">Choose your entry</div>
+    <div class="mode-grid" id="lMG">
+      <div class="mp sel" onclick="lMode(0,this)"><div class="sd"></div><div class="mp-p">500K</div><div class="mp-s">CASHX . 5 players</div><div class="mp-t">40% win rate</div></div>
+      <div class="mp" onclick="lMode(1,this)"><div class="sd"></div><div class="mp-p">200K</div><div class="mp-s">CASHX . 1v1</div><div class="mp-t">50% win rate</div></div>
+      <div class="mp" onclick="lMode(2,this)"><div class="sd"></div><div class="mp-p">5M</div><div class="mp-s">CASHX . 5 players</div><div class="mp-t">40% win rate</div></div>
+      <div class="mp" onclick="lMode(3,this)"><div class="sd"></div><div class="mp-p">10M</div><div class="mp-s">CASHX . 5 players</div><div class="mp-t">40% win rate</div></div>
+    </div>
+    <div class="sl">Prize breakdown</div>
+    <div style="background:#1a1a1a;border:1px solid #2a2a2a;border-radius:16px;padding:4px 16px;margin-bottom:16px;">
+      <div class="pr-row"><div class="pr-l"><div class="pr-ic g">🏆</div><div><div class="pr-lb">Winner</div><div class="pr-sb">60% of pot</div></div></div><div class="pr-am g" id="lPW">300K CASHX</div></div>
+      <div class="pr-row"><div class="pr-l"><div class="pr-ic s">🥈</div><div><div class="pr-lb">Runner-up</div><div class="pr-sb">20% of pot</div></div></div><div class="pr-am s" id="lPR">100K CASHX</div></div>
+      <div class="pr-row"><div class="pr-l"><div class="pr-ic r">🔥</div><div><div class="pr-lb">Burned forever</div><div class="pr-sb">20% of pot</div></div></div><div class="pr-am r" id="lPB">100K CASHX</div></div>
+    </div>
+    <div class="steps"><div class="sdot act" id="ls1">1</div><div class="sline" id="ll1"></div><div class="sdot" id="ls2">2</div><div class="sline" id="ll2"></div><div class="sdot" id="ls3">3</div></div>
+    <div id="lS1">
+      <div class="sl">Game ID (optional)</div>
+      <input class="inp" id="lGID" type="number" placeholder="Leave blank to create new game" min="0"/>
+      <div style="background:#1a1a1a;border:1px solid #2a2a2a;border-radius:12px;padding:4px 14px;margin-bottom:16px;">
+        <div class="ir"><span class="ik">Mode</span><span class="iv" id="lSM">500K CASHX . 5 players</span></div>
+        <div class="ir"><span class="ik">Entry</span><span class="iv" style="color:#b44fff" id="lSE">100,000 CASHX</span></div>
+        <div class="ir" style="border:none"><span class="ik">Max win</span><span class="iv" style="color:#ffd700" id="lSW">300K CASHX</span></div>
+      </div>
+    </div>
+    <div id="lS2" style="display:none">
+      <div class="dep-box"><div class="dep-lb">Send to this address</div><div class="dep-ad" id="lDA">Generating...</div><div class="dep-am"><div class="dep-al">Exact amount</div><div class="dep-av" id="lAmt">-</div></div></div>
+      <button class="cp" onclick="cpA()">Copy address</button>
+      <button class="cp" onclick="cpAm()" style="background:transparent;border-color:#333;color:#888">Copy amount</button>
+      <div style="background:rgba(255,215,0,.04);border:1px solid rgba(255,215,0,.2);border-radius:8px;padding:10px 12px;font-size:12px;color:#aaa;line-height:1.7;">Note: Send <strong style="color:#fff">exactly</strong> the amount shown from your PulseChain wallet. Do not send from an exchange.</div>
+    </div>
+    <div id="lS3" style="display:none">
+      <div style="background:#1a1a1a;border:1px solid #2a2a2a;border-radius:16px;padding:28px 16px;text-align:center;margin-bottom:12px;">
+        <div style="width:40px;height:40px;border:2px solid #333;border-top-color:#b44fff;border-radius:50%;margin:0 auto 16px;animation:spin 1s linear infinite;"></div>
+        <div style="font-size:15px;font-weight:600;margin-bottom:6px;">Watching for deposit</div>
+        <div style="font-size:13px;color:#444;line-height:1.6;">Usually confirms in 10-30 seconds. You'll get a Telegram notification automatically.</div>
+      </div>
+    </div>
+    <div class="sl">Open games</div>
+    <div style="background:#1a1a1a;border:1px solid #2a2a2a;border-radius:12px;padding:14px;margin-bottom:8px;display:flex;align-items:center;gap:12px;cursor:pointer;" onclick="lJoin(12)">
+      <div style="width:36px;height:36px;border-radius:8px;background:rgba(180,79,255,.12);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;color:#b44fff;flex-shrink:0;">#12</div>
+      <div style="flex:1"><div style="font-size:15px;font-weight:600;">500,000 CASHX</div><div style="font-size:11px;color:#444;margin-top:3px;">100K entry . 5 players</div><div style="display:flex;gap:3px;margin-top:8px;"><div style="height:4px;flex:1;border-radius:2px;background:#ff4fd8;"></div><div style="height:4px;flex:1;border-radius:2px;background:#b44fff;"></div><div style="height:4px;flex:1;border-radius:2px;background:#b44fff;"></div><div style="height:4px;flex:1;border-radius:2px;background:#333;"></div><div style="height:4px;flex:1;border-radius:2px;background:#333;"></div></div></div>
+      <div style="font-size:10px;font-weight:600;padding:4px 10px;border-radius:20px;background:rgba(0,211,149,.1);color:#00d395;border:1px solid rgba(0,211,149,.2);">Open</div>
+    </div>
+  </div>
+  <div class="pin"><button class="bp" id="lBtn" onclick="lAct()" style="margin-bottom:0">Get deposit address -></button></div>
+</div>
+
+<!-- ========== PROFILE ========== -->
+<div class="page" id="p-me">
+  <div class="hdr">
+    <button class="hdr-back" onclick="navTo('home')"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>Back</button>
+    <div style="font-size:14px;font-weight:600">My Account</div>
+    <div style="width:60px"></div>
+  </div>
+  <div class="scroll">
+
+    <!-- Balance card -->
+    <div style="background:linear-gradient(135deg,rgba(180,79,255,.2),rgba(255,79,216,.15));border:1px solid rgba(180,79,255,.4);border-radius:16px;padding:20px;text-align:center;margin-bottom:16px;">
+      <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;">Your balance</div>
+      <div style="font-size:42px;font-weight:600;letter-spacing:-1px;color:#b44fff;line-height:1;" id="meBalance">--</div>
+      <div style="font-size:14px;color:#888;margin-top:4px;">CASHX</div>
+      <div style="display:flex;justify-content:center;gap:24px;margin-top:16px;padding-top:16px;border-top:1px solid rgba(180,79,255,.2);">
+        <div style="text-align:center;"><div style="font-size:14px;font-weight:600;color:#fff;" id="meTotalDep">0</div><div style="font-size:10px;color:#444;text-transform:uppercase;margin-top:2px;">Deposited</div></div>
+        <div style="text-align:center;"><div style="font-size:14px;font-weight:600;color:#fff;" id="meTotalWon">0</div><div style="font-size:10px;color:#444;text-transform:uppercase;margin-top:2px;">Won</div></div>
+        <div style="text-align:center;"><div style="font-size:14px;font-weight:600;color:#fff;" id="meTotalWag">0</div><div style="font-size:10px;color:#444;text-transform:uppercase;margin-top:2px;">Wagered</div></div>
+      </div>
+    </div>
+
+    <!-- Deposit -->
+    <div style="font-size:11px;color:#444;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;">Deposit CASHX</div>
+    <div style="background:#1a1a1a;border:1px solid #2a2a2a;border-radius:12px;padding:14px;margin-bottom:8px;">
+      <div style="font-size:12px;color:#888;line-height:1.7;margin-bottom:12px;">Send <strong style="color:#fff">CASHX</strong> or <strong style="color:#fff">PLS</strong> to your deposit address. PLS is automatically swapped to CASHX on PulseX. Any amount, any time.</div>
+      <div style="display:flex;gap:8px;margin-bottom:12px;">
+        <div style="flex:1;background:rgba(180,79,255,.08);border:1px solid rgba(180,79,255,.2);border-radius:8px;padding:8px;text-align:center;">
+          <div style="font-size:12px;font-weight:600;color:#b44fff;">CASHX</div>
+          <div style="font-size:10px;color:#444;margin-top:2px;">Direct deposit</div>
+        </div>
+        <div style="flex:1;background:rgba(0,211,149,.08);border:1px solid rgba(0,211,149,.2);border-radius:8px;padding:8px;text-align:center;">
+          <div style="font-size:12px;font-weight:600;color:#00d395;">PLS (auto-swap)</div>
+          <div style="font-size:10px;color:#444;margin-top:2px;">Auto-swapped to CASHX</div>
+        </div>
+      </div>
+      <div style="background:#141414;border:1px solid #333;border-radius:8px;padding:10px 12px;margin-bottom:10px;">
+        <div style="font-size:10px;color:#444;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;">Your deposit address</div>
+        <div style="font-size:11px;color:#b44fff;font-family:monospace;word-break:break-all;line-height:1.6;" id="meDepAddr">Loading...</div>
+      </div>
+      <button onclick="meCopyAddr()" style="width:100%;background:rgba(180,79,255,.12);border:1px solid #b44fff;color:#b44fff;font-family:-apple-system,sans-serif;font-size:13px;font-weight:600;padding:12px;border-radius:8px;cursor:pointer;margin-bottom:6px;">Copy deposit address</button>
+      <div style="font-size:11px;color:#444;text-align:center;">PulseChain network only - CASHX token</div>
+    </div>
+
+    <!-- Withdraw -->
+    <div style="font-size:11px;color:#444;text-transform:uppercase;letter-spacing:.5px;margin:16px 0 10px;">Withdraw CASHX</div>
+    <div style="background:#1a1a1a;border:1px solid #2a2a2a;border-radius:12px;padding:14px;margin-bottom:16px;">
+      <div style="font-size:12px;color:#888;line-height:1.7;margin-bottom:12px;">Withdraw to any PulseChain wallet. Under 1M CASHX is instant. Over 1M is sent on-chain.</div>
+      <div style="font-size:11px;color:#444;margin-bottom:6px;">Amount (CASHX)</div>
+      <input id="meWithdrawAmt" type="number" placeholder="e.g. 500000" style="width:100%;background:#141414;border:1px solid #333;color:#fff;font-family:-apple-system,sans-serif;font-size:14px;padding:12px;border-radius:8px;outline:none;margin-bottom:10px;"/>
+      <div style="font-size:11px;color:#444;margin-bottom:6px;">Your PulseChain wallet address</div>
+      <input id="meWithdrawAddr" placeholder="0x..." style="width:100%;background:#141414;border:1px solid #333;color:#fff;font-family:-apple-system,sans-serif;font-size:13px;padding:12px;border-radius:8px;outline:none;margin-bottom:12px;font-family:monospace;"/>
+      <button onclick="meWithdraw()" style="width:100%;background:linear-gradient(135deg,#b44fff,#ff4fd8);border:none;color:#fff;font-family:-apple-system,sans-serif;font-size:15px;font-weight:600;padding:14px;border-radius:10px;cursor:pointer;">Withdraw</button>
+    </div>
+
+    <!-- Transaction history -->
+    <div style="font-size:11px;color:#444;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;">Recent transactions</div>
+    <div style="background:#1a1a1a;border:1px solid #2a2a2a;border-radius:12px;padding:4px 14px;margin-bottom:16px;" id="meTxHistory">
+      <div class="ir" style="border:none;color:#444;font-size:12px;justify-content:center;">Loading...</div>
+    </div>
+
+    <!-- Referral -->
+    <div style="font-size:11px;color:#444;text-transform:uppercase;letter-spacing:.5px;margin:16px 0 10px;">Referral</div>
+    <div style="background:#1a1a1a;border:1px solid #2a2a2a;border-radius:12px;padding:14px;margin-bottom:16px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+        <div>
+          <div style="font-size:14px;font-weight:600;color:#fff;">Refer a friend</div>
+          <div style="font-size:12px;color:#888;margin-top:2px;">Earn 5% of their first deposit</div>
+        </div>
+        <div style="background:rgba(0,211,149,.1);border:1px solid rgba(0,211,149,.2);border-radius:20px;padding:4px 10px;font-size:12px;font-weight:600;color:#00d395;" id="refEarned">+0 CASHX</div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;">
+        <div style="background:#141414;border:1px solid #333;border-radius:8px;padding:10px;text-align:center;">
+          <div style="font-size:20px;font-weight:600;color:#fff;" id="refCount">0</div>
+          <div style="font-size:10px;color:#444;margin-top:2px;text-transform:uppercase;letter-spacing:.5px;">Referrals</div>
+        </div>
+        <div style="background:#141414;border:1px solid #333;border-radius:8px;padding:10px;text-align:center;">
+          <div style="font-size:20px;font-weight:600;color:#b44fff;" id="refTotal">0</div>
+          <div style="font-size:10px;color:#444;margin-top:2px;text-transform:uppercase;letter-spacing:.5px;">CASHX earned</div>
+        </div>
+      </div>
+      <div style="background:#141414;border:1px solid #333;border-radius:8px;padding:10px 12px;margin-bottom:10px;">
+        <div style="font-size:10px;color:#444;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Your referral link</div>
+        <div style="font-size:11px;color:#b44fff;font-family:monospace;word-break:break-all;" id="refLink">Loading...</div>
+      </div>
+      <button onclick="copyRefLink()" style="width:100%;background:rgba(0,211,149,.1);border:1px solid rgba(0,211,149,.3);color:#00d395;font-family:-apple-system,sans-serif;font-size:13px;font-weight:600;padding:11px;border-radius:8px;cursor:pointer;">Copy referral link</button>
+    </div>
+
+    <!-- Notifications -->
+    <div style="font-size:11px;color:#444;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;">Notifications</div>
+    <div style="background:#1a1a1a;border:1px solid #2a2a2a;border-radius:16px;padding:4px 16px;margin-bottom:16px;">
+      <div class="tr"><div class="tr-lb">Game filled alerts</div><div class="tog on" onclick="this.classList.toggle('on')"></div></div>
+      <div class="tr"><div class="tr-lb">Reveal reminders</div><div class="tog on" onclick="this.classList.toggle('on')"></div></div>
+      <div class="tr"><div class="tr-lb">Result notifications</div><div class="tog on" onclick="this.classList.toggle('on')"></div></div>
+    </div>
+
+    <!-- Account info -->
+    <div style="font-size:11px;color:#444;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;">Account</div>
+    <div style="background:#1a1a1a;border:1px solid #2a2a2a;border-radius:16px;padding:4px 16px;margin-bottom:24px;">
+      <div class="ir"><span class="ik">Telegram</span><span class="iv" id="meTg">-</span></div>
+      <div class="ir"><span class="ik">ID</span><span class="iv" id="meTgId">-</span></div>
+      <div class="ir" style="border:none"><span class="ik">Bot</span><span class="iv" style="color:#b44fff;">@CashX_Ai_bot</span></div>
+    </div>
+
+  </div>
+</div>
+<!-- ====== HI-LO PAGE ====== -->
+<div class="page" id="p-hilo">
+  <div class="hdr">
+    <button class="hdr-back" onclick="back('p-hilo')"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>Back</button>
+    <div style="font-size:14px;font-weight:600">Hi-Lo</div>
+  </div>
+  <div class="bal-bar"><div class="bal-label">Balance</div><div class="bal-val" id="hiloBalance">--</div><div class="bal-token">CASHX</div></div>
+  <div class="scroll" id="hiloScroll">
+
+    <!-- Card display -->
+    <div style="display:flex;justify-content:center;margin-bottom:20px;gap:16px;">
+      <div style="text-align:center;">
+        <div style="font-size:10px;color:#444;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;">Current</div>
+        <div id="hlCurrentCard" style="width:80px;height:110px;background:#1a1a1a;border:2px solid #333;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:36px;font-weight:700;color:#fff;transition:all .3s;">?</div>
+      </div>
+      <div style="text-align:center;">
+        <div style="font-size:10px;color:#444;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;">Next</div>
+        <div id="hlNextCard" style="width:80px;height:110px;background:#141414;border:2px solid #2a2a2a;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:36px;font-weight:700;color:#444;">?</div>
+      </div>
+    </div>
+
+    <!-- Result -->
+    <div class="rc" id="hlRC"><span class="rc-em" id="hlRCe"></span><div class="rc-ti" id="hlRCt"></div><div class="rc-am" id="hlRCa"></div><div class="rc-sb" id="hlRCs"></div></div>
+
+    <!-- Guess buttons -->
+    <div style="font-size:11px;color:#444;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;">Your guess</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px;">
+      <button id="hlHighBtn" onclick="hlGuess('high')" style="background:#141414;border:2px solid #2a2a2a;border-radius:12px;padding:20px;cursor:pointer;transition:all .2s;text-align:center;" disabled>
+        <div style="font-size:28px;margin-bottom:6px;">&#x2191;</div>
+        <div style="font-size:15px;font-weight:600;color:#fff;">Higher</div>
+        <div style="font-size:11px;color:#444;margin-top:4px;">1.9x payout</div>
+      </button>
+      <button id="hlLowBtn" onclick="hlGuess('low')" style="background:#141414;border:2px solid #2a2a2a;border-radius:12px;padding:20px;cursor:pointer;transition:all .2s;text-align:center;" disabled>
+        <div style="font-size:28px;margin-bottom:6px;">&#x2193;</div>
+        <div style="font-size:15px;font-weight:600;color:#fff;">Lower</div>
+        <div style="font-size:11px;color:#444;margin-top:4px;">1.9x payout</div>
+      </button>
+    </div>
+
+
+
+    <!-- Bet size -->
+    <div style="font-size:11px;color:#444;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;">Bet size</div>
+    <div class="tiers" id="hlTiers">
+      <div class="tb sel" onclick="hlSetTier(0,this)"><div class="tb-a">100K</div><div class="tb-l">CASHX</div></div>
+      <div class="tb" onclick="hlSetTier(1,this)"><div class="tb-a">500K</div><div class="tb-l">CASHX</div></div>
+      <div class="tb" onclick="hlSetTier(2,this)"><div class="tb-a">1M</div><div class="tb-l">CASHX</div></div>
+    </div>
+
+    <div class="bn">&#x1F525; Losing bets burned forever</div>
+
+    <!-- Streak -->
+    <div style="background:#1a1a1a;border:1px solid #2a2a2a;border-radius:12px;padding:12px 14px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;">
+      <div>
+        <div style="font-size:11px;color:#444;text-transform:uppercase;letter-spacing:.5px;">Current streak</div>
+        <div style="font-size:24px;font-weight:600;color:#fff;" id="hlStreak">0</div>
+      </div>
+      <div style="text-align:right;">
+        <div style="font-size:11px;color:#444;text-transform:uppercase;letter-spacing:.5px;">Multiplier</div>
+        <div style="font-size:24px;font-weight:600;color:#b44fff;" id="hlMult">1.0x</div>
+      </div>
+    </div>
+
+    <div style="font-size:11px;color:#444;margin-bottom:24px;line-height:1.7;text-align:center;">Streak bonus: 2 correct = 1.5x - 3 correct = 2.5x - 4+ correct = 4x</div>
+
+  </div>
+  <div class="pin">
+    <button class="bp" id="hlStartBtn" onclick="hlStart()" style="margin-bottom:0">Deal card to start -></button>
+  </div>
+</div>
+
+<!-- ====== JACKPOT PAGE ====== -->
+<div class="page" id="p-jackpot">
+  <div class="hdr">
+    <button class="hdr-back" onclick="back('p-jackpot')"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>Back</button>
+    <div style="font-size:14px;font-weight:600">Jackpot</div>
+  </div>
+  <div class="bal-bar"><div class="bal-label">Balance</div><div class="bal-val" id="jackpotBalance">--</div><div class="bal-token">CASHX</div></div>
+  <div class="scroll">
+
+    <!-- Jackpot pot -->
+    <div style="background:linear-gradient(135deg,rgba(255,215,0,.15),rgba(255,71,87,.1));border:1px solid rgba(255,215,0,.3);border-radius:16px;padding:20px;text-align:center;margin-bottom:16px;">
+      <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;">Current pot</div>
+      <div style="font-size:42px;font-weight:600;letter-spacing:-1px;color:#ffd700;line-height:1;" id="jpPot">2.4M</div>
+      <div style="font-size:13px;color:#888;margin-top:4px;">CASHX</div>
+      <div style="display:flex;justify-content:center;gap:24px;margin-top:16px;padding-top:16px;border-top:1px solid rgba(255,215,0,.2);">
+        <div style="text-align:center;"><div style="font-size:16px;font-weight:600;color:#fff;" id="jpDrawTime">2h 14m</div><div style="font-size:10px;color:#444;text-transform:uppercase;margin-top:2px;">Next draw</div></div>
+        <div style="text-align:center;"><div style="font-size:16px;font-weight:600;color:#fff;" id="jpTickets">847</div><div style="font-size:10px;color:#444;text-transform:uppercase;margin-top:2px;">Total tickets</div></div>
+        <div style="text-align:center;"><div style="font-size:16px;font-weight:600;color:#fff;" id="jpPlayers">94</div><div style="font-size:10px;color:#444;text-transform:uppercase;margin-top:2px;">Players</div></div>
+      </div>
+    </div>
+
+    <!-- Prize breakdown -->
+    <div style="font-size:11px;color:#444;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;">Prize split</div>
+    <div style="background:#1a1a1a;border:1px solid #2a2a2a;border-radius:16px;padding:4px 16px;margin-bottom:16px;">
+      <div class="ir"><span class="ik">Main winner</span><span class="iv" style="color:#ffd700;">58% of pot</span></div>
+      <div class="ir"><span class="ik">Consolation prizes</span><span class="iv" style="color:#888;">10% split</span></div>
+      <div class="ir" style="border:none"><span class="ik">Burned forever</span><span class="iv" style="color:#ff4757;">32% burned</span></div>
+    </div>
+
+    <!-- Ticket entry -->
+    <div style="font-size:11px;color:#444;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;">Buy tickets</div>
+    <div style="background:#1a1a1a;border:1px solid #2a2a2a;border-radius:12px;padding:16px;margin-bottom:12px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+        <div style="font-size:13px;color:#888;">100K CASHX = 1 ticket (max 1M)</div>
+        <div style="font-size:13px;color:#888;">Max 10 tickets</div>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;background:#141414;border:1px solid #333;border-radius:8px;padding:4px;">
+        <button onclick="jpAdjust(-1)" style="width:44px;height:44px;background:none;border:none;color:#fff;font-size:22px;cursor:pointer;border-radius:6px;">-</button>
+        <div style="text-align:center;">
+          <div style="font-size:24px;font-weight:600;color:#fff;" id="jpTicketCount">1</div>
+          <div style="font-size:11px;color:#444;">tickets</div>
+        </div>
+        <button onclick="jpAdjust(1)" style="width:44px;height:44px;background:none;border:none;color:#fff;font-size:22px;cursor:pointer;border-radius:6px;">+</button>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-top:12px;padding-top:12px;border-top:1px solid #2a2a2a;">
+        <div style="font-size:13px;color:#888;">Total cost</div>
+        <div style="font-size:15px;font-weight:600;color:#b44fff;" id="jpTotalCost">100K CASHX</div>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-top:8px;">
+        <div style="font-size:13px;color:#888;">Your win chance</div>
+        <div style="font-size:13px;font-weight:600;color:#fff;" id="jpWinChance">0.12%</div>
+      </div>
+    </div>
+
+    <!-- Referral -->
+    <div style="font-size:11px;color:#444;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;">Referral bonus</div>
+    <div style="background:rgba(0,211,149,.06);border:1px solid rgba(0,211,149,.2);border-radius:12px;padding:14px;margin-bottom:12px;">
+      <div style="font-size:13px;color:#fff;font-weight:600;margin-bottom:6px;">Refer a friend = +1 free ticket each</div>
+      <div style="font-size:12px;color:#888;line-height:1.7;margin-bottom:12px;">Share your referral link. When they enter, you both get a bonus ticket added automatically.</div>
+      <div style="background:#141414;border:1px solid #333;border-radius:8px;padding:10px 12px;font-size:11px;color:#b44fff;font-family:monospace;word-break:break-all;margin-bottom:8px;" id="jpRefLink">t.me/CashX_Ai_bot?start=ref_...</div>
+      <button onclick="jpCopyRef()" style="width:100%;background:rgba(0,211,149,.1);border:1px solid rgba(0,211,149,.3);color:#00d395;font-family:-apple-system,sans-serif;font-size:13px;font-weight:600;padding:10px;border-radius:8px;cursor:pointer;">Copy referral link</button>
+    </div>
+
+    <!-- Your tickets this round -->
+    <div style="font-size:11px;color:#444;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;">Your tickets this round</div>
+    <div style="background:#1a1a1a;border:1px solid #2a2a2a;border-radius:12px;padding:14px;margin-bottom:16px;text-align:center;" id="jpMyTickets">
+      <div style="font-size:28px;font-weight:600;color:#b44fff;">0</div>
+      <div style="font-size:12px;color:#444;margin-top:4px;">tickets entered</div>
+    </div>
+
+    <!-- Deposit box -->
+    <div id="jpDepositBox" style="display:none;">
+      <div class="dep-box">
+        <div class="dep-lb">Send CASHX to this address</div>
+        <div class="dep-ad" id="jpDepAddr">Generating...</div>
+        <div class="dep-am"><div class="dep-al">Exact amount</div><div class="dep-av" id="jpDepAmt">-</div></div>
+      </div>
+      <button class="cp" onclick="jpCopyAddr()">Copy address</button>
+      <div style="background:rgba(255,215,0,.04);border:1px solid rgba(255,215,0,.2);border-radius:8px;padding:10px 12px;font-size:12px;color:#888;line-height:1.7;margin-bottom:12px;">Send exactly the amount shown in CASHX from your PulseChain wallet. Each 100K CASHX = 1 ticket. Confirmed automatically.</div>
+    </div>
+
+    <!-- Past winners -->
+    <div style="font-size:11px;color:#444;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;">Recent winners</div>
+    <div style="background:#1a1a1a;border:1px solid #2a2a2a;border-radius:12px;padding:4px 14px;margin-bottom:24px;">
+      <div class="ir"><span class="ik">@pulse_whale</span><span class="iv" style="color:#ffd700;">+1.4M CASHX</span></div>
+      <div class="ir"><span class="ik">@richhard</span><span class="iv" style="color:#ffd700;">+820K CASHX</span></div>
+      <div class="ir" style="border:none"><span class="ik">@anon7742</span><span class="iv" style="color:#ffd700;">+2.1M CASHX</span></div>
+    </div>
+
+  </div>
+  <div class="pin">
+    <button class="bp" id="jpBuyBtn" onclick="jpBuy()" style="margin-bottom:0">Get deposit address -></button>
+  </div>
+</div>
+
+<div class="page" id="p-how">
+  <div class="hdr">
+    <button class="hdr-back" onclick="navTo('home')"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>Back</button>
+    <div style="font-size:14px;font-weight:600">How to play</div>
+    <div style="width:60px"></div>
+  </div>
+  <div class="scroll">
+    <div style="background:linear-gradient(135deg,rgba(180,79,255,.15),rgba(255,79,216,.15));border:1px solid rgba(180,79,255,.3);border-radius:16px;padding:16px;margin-bottom:16px;">
+      <div style="font-size:15px;font-weight:600;margin-bottom:6px;">No wallet connection needed</div>
+      <div style="font-size:13px;color:#888;line-height:1.7;">Just send CASHX or PLS to your deposit address. PLS is automatically swapped to CASHX. Play instantly from your balance.</div>
+    </div>
+    <div class="sl">How to enter a game</div>
+    <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px;">
+      <div style="background:#1a1a1a;border:1px solid #2a2a2a;border-radius:12px;padding:14px;display:flex;gap:14px;align-items:flex-start;">
+        <div style="width:32px;height:32px;min-width:32px;border-radius:50%;background:linear-gradient(135deg,#b44fff,#ff4fd8);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#fff;">1</div>
+        <div><div style="font-size:14px;font-weight:600;margin-bottom:4px;">Deposit CASHX or PLS</div><div style="font-size:12px;color:#888;line-height:1.6;">Go to the Me tab and copy your personal deposit address. Send CASHX or PLS to it. PLS auto-swaps to CASHX.</div></div>
+      </div>
+      <div style="background:#1a1a1a;border:1px solid #2a2a2a;border-radius:12px;padding:14px;display:flex;gap:14px;align-items:flex-start;">
+        <div style="width:32px;height:32px;min-width:32px;border-radius:50%;background:linear-gradient(135deg,#b44fff,#ff4fd8);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#fff;">2</div>
+        <div><div style="font-size:14px;font-weight:600;margin-bottom:4px;">Pick a game</div><div style="font-size:12px;color:#888;line-height:1.6;">Choose Lottery, Dice, Hi-Lo or Jackpot. Your CASHX balance is shown at the top of every game.</div></div>
+      </div>
+      <div style="background:#1a1a1a;border:1px solid #2a2a2a;border-radius:12px;padding:14px;display:flex;gap:14px;align-items:flex-start;">
+        <div style="width:32px;height:32px;min-width:32px;border-radius:50%;background:linear-gradient(135deg,#b44fff,#ff4fd8);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#fff;">3</div>
+        <div><div style="font-size:14px;font-weight:600;margin-bottom:4px;">Place your bet</div><div style="font-size:12px;color:#888;line-height:1.6;">Your CASHX balance is deducted instantly. No sending required once you have a balance.</div></div>
+      </div>
+      <div style="background:#1a1a1a;border:1px solid rgba(0,211,149,.3);border-radius:12px;padding:14px;display:flex;gap:14px;align-items:flex-start;">
+        <div style="width:32px;height:32px;min-width:32px;border-radius:50%;background:#00d395;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#fff;">4</div>
+        <div><div style="font-size:14px;font-weight:600;margin-bottom:4px;color:#00d395;">Winnings credited instantly</div><div style="font-size:12px;color:#888;line-height:1.6;">Wins go straight to your balance. Withdraw anytime to your wallet.</div></div>
+      </div>
+    </div>
+    <div class="sl">Important rules</div>
+    <div style="background:#1a1a1a;border:1px solid #2a2a2a;border-radius:16px;padding:4px 16px;margin-bottom:16px;">
+      <div class="ir"><span class="ik">Send from</span><span class="iv" style="color:#00d395;">Your own wallet</span></div>
+      <div class="ir"><span class="ik">Do not send from</span><span class="iv" style="color:#ff4757;">Exchanges</span></div>
+      <div class="ir"><span class="ik">Network</span><span class="iv">PulseChain only</span></div>
+      <div class="ir" style="border:none"><span class="ik">Wrong amount</span><span class="iv">Auto-refunded</span></div>
+    </div>
+    <div class="sl">The burn mechanic</div>
+    <div style="background:rgba(255,71,87,.06);border:1px solid rgba(255,71,87,.2);border-radius:16px;padding:14px;margin-bottom:16px;font-size:13px;color:#888;line-height:1.8;">
+      Every game burns <strong style="color:#fff;">20% of the pot</strong> in CASHX forever. Whether you win or lose, a portion is permanently removed from supply. In Dice, losing bets are burned 100%. The more games played, the rarer CASHX becomes.
+    </div>
+    <div class="sl">FAQ</div>
+    <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:24px;">
+      <div class="faq-item" id="faq0"><div class="faq-q"><div style="font-size:13px;font-weight:500;">How long does a game take?</div><div class="faq-arr">v</div></div><div class="faq-a">Dice and Hi-Lo are instant. Lottery fills when 5 players join then resolves automatically. Jackpot draws hourly.</div></div>
+      <div class="faq-item" id="faq1"><div class="faq-q"><div style="font-size:13px;font-weight:500;">Is the result provably fair?</div><div class="faq-arr">v</div></div><div class="faq-a">Yes. The lottery uses a commit-reveal system on-chain. All game logic runs on public smart contracts on PulseChain.</div></div>
+      <div class="faq-item" id="faq2"><div class="faq-q"><div style="font-size:13px;font-weight:500;">What if nobody joins my lottery game?</div><div class="faq-arr">v</div></div><div class="faq-a">If your game does not fill within the expiry window, your CASHX is automatically refunded to your balance.</div></div>
+      <div class="faq-item" id="faq3"><div class="faq-q"><div style="font-size:13px;font-weight:500;">Where do I get CASHX?</div><div class="faq-arr">v</div></div><div class="faq-a">CASHX is available on PulseX. Swap PLS for CASHX on PulseChain mainnet. Or just deposit PLS and we swap it for you automatically.</div></div>
+      <div class="faq-item" id="faq4"><div class="faq-q"><div style="font-size:13px;font-weight:500;">What is the house edge?</div><div class="faq-arr">v</div></div><div class="faq-a">No traditional house edge. The 20% burn goes permanently out of circulation. In Lottery, 80% of the pot is paid out to players.</div></div>
+    </div>
+  </div>
+</div>
 
 </div><!-- end pages -->
 </div><!-- end app -->
-
 <div id="toast"></div>
 
 <script>
-// Your original JavaScript (with improved init)
-const tg = window.Telegram?.WebApp;
-let tgu = tg?.initDataUnsafe?.user || null;
-if (!tgu && tg && tg.initDataUnsafe) tgu = tg.initDataUnsafe.user || null;
+const tg=window.Telegram?.WebApp;
+let tgu=tg?.initDataUnsafe?.user||null;
+if(!tgu && tg && tg.initDataUnsafe) tgu=tg.initDataUnsafe.user||null;
+/* UPDATE THIS URL TO YOUR RAILWAY URL */
+  const API='https://cashx-bot-fun.up.railway.app';
 
-const API = window.location.origin.includes('railway') ? window.location.origin : 'https://cashx-bot-production.up.railway.app';
-
-// All your original variables and functions (hNums, demos, LM, etc.) remain unchanged
+// State
 let hNums=[],hTierIdx=0,hEntType='p',rolls=0,wins=0;
 let vNum=null,vTier_=0,vEnt_='p',cdTimer;
 let lm=0,ls=1;
 const TL=['100K','500K','1M'],TV=[100000,500000,1000000];
 const FC={1:'f1',2:'f2',3:'f3',4:'f4',5:'f5',6:'f6'};
-// ... (all your other constants and functions stay exactly the same) ...
+const LM=[
+  {l:'500K CASHX . 5 players',e:'100,000 CASHX',er:100000,w:'300K CASHX',r:'100K CASHX',b:'100K CASHX'},
+  {l:'200K CASHX . 1v1',e:'100,000 CASHX',er:100000,w:'120K CASHX',r:'40K CASHX',b:'40K CASHX'},
+  {l:'5M CASHX . 5 players',e:'1,000,000 CASHX',er:1000000,w:'3M CASHX',r:'1M CASHX',b:'1M CASHX'},
+  {l:'10M CASHX . 5 players',e:'2,000,000 CASHX',er:2000000,w:'6M CASHX',r:'2M CASHX',b:'2M CASHX'},
+];
+const demos=[
+  {id:1,name:'@pulse_whale',pick:3,tier:0,entry:'pls',exp:2400},
+  {id:2,name:'@richhard',pick:6,tier:1,entry:'cashx',exp:1820},
+  {id:3,name:'@dicemaster',pick:1,tier:2,entry:'pls',exp:890},
+];
 
-// Improved initialization
-window.addEventListener('DOMContentLoaded', () => {
-  // Extra safety call
-  try {
-    if (tg) {
-      tg.ready();
-      tg.expand();
-      tg.setHeaderColor('#000000');
-      tg.setBackgroundColor('#000000');
-    }
-  } catch(e) {}
-
-  if (tgu) {
-    const n = tgu.username ? '@' + tgu.username : tgu.first_name;
-    const i = (tgu.first_name || 'G')[0].toUpperCase();
-    document.getElementById('uAv').textContent = i;
-    document.getElementById('uNm').textContent = n;
+// Init
+window.addEventListener('DOMContentLoaded',()=>{
+  try{if(tg){tg.ready();tg.expand();tg.setHeaderColor('#000000');tg.setBackgroundColor('#000000');}}catch(e){}
+  if(tgu){
+    const n=tgu.username?'@'+tgu.username:tgu.first_name;
+    const i=(tgu.first_name||'G')[0].toUpperCase();
+    ['uAv',''].forEach(()=>{});
+    document.getElementById('uAv').textContent=i;
+    document.getElementById('uNm').textContent=n;
+    document.getElementById('mTg').textContent=n;
+    document.getElementById('mTgId').textContent=tgu.id;
   }
-
-  rChal(); 
-  animBurn(); 
-  initFaq();
+  rChal();animBurn();initFaq();
   loadAccount();
-
-  function showApp() {
-    try {
-      const l = document.getElementById('ls');
-      if (l) {
-        l.classList.add('hide');
-        setTimeout(() => { l.style.display = 'none'; }, 300);
-      }
-    } catch(e) {}
-
-    try {
-      const a = document.getElementById('app');
-      if (a) {
-        a.style.display = 'flex';
-        a.style.visibility = 'visible';
-        a.style.opacity = '1';
-      }
-    } catch(e) {}
+  function showApp(){
+    try{const l=document.getElementById('ls');if(l){l.classList.add('hide');setTimeout(()=>{l.style.display='none';},400);}}catch(e){}
+    try{const a=document.getElementById('app');if(a){a.style.display='flex';a.style.visibility='visible';a.style.opacity='1';}}catch(e){}
+    try{if(tg)tg.ready();}catch(e){}
   }
-
-  // Faster loader hide
-  showApp();
-  setTimeout(showApp, 400);
   setTimeout(showApp, 800);
-  setTimeout(showApp, 1500);
+  setTimeout(showApp, 2000);
+  setTimeout(showApp, 4000);
 });
 
-window.addEventListener('load', () => {
-  try { if (tg) tg.ready(); } catch(e) {}
-});
+// Navigation
+function go(pg){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active','behind'));
+  document.getElementById(pg).classList.add('active');
+  tg?.HapticFeedback?.impactOccurred('light');
+}
+function back(pg){
+  document.querySelectorAll('.page').forEach(function(p){p.classList.remove('active','behind');});
+  document.getElementById('p-lobby').classList.add('active');
+  document.querySelectorAll('.nb').forEach(function(b){b.classList.remove('active');});
+  document.getElementById('nb-home').classList.add('active');
+  if(tg&&tg.HapticFeedback)tg.HapticFeedback.selectionChanged();
+}
+function nav(t){navTo(t);}
+function navTo(t){
+  document.querySelectorAll('.page').forEach(function(p){p.classList.remove('active','behind');});
+  if(t==='me'){document.getElementById('p-me').classList.add('active');loadAccountPage();initReferral();}
+  else if(t==='how'){document.getElementById('p-how').classList.add('active');}
+  else{document.getElementById('p-lobby').classList.add('active');}
+  document.querySelectorAll('.nb').forEach(function(b){b.classList.remove('active');});
+  var nbid=t==='home'?'nb-home':t==='me'?'nb-me':'nb-how';
+  document.getElementById(nbid).classList.add('active');
+  tg?.HapticFeedback?.selectionChanged();
+}
 
-// All your original functions (go, back, navTo, roll, lAct, hlGuess, etc.) remain exactly the same
-// ... paste the rest of your original <script> content here (navigation, dice logic, lottery, referral, account, etc.) ...
+// Burn counter
+function animBurn(){
+  const el=document.getElementById('burnCount');
+  let v=0;const T=48732000;const step=Math.ceil(T/60);
+  const iv=setInterval(()=>{v=Math.min(v+step,T);el.textContent=fmtC(v);if(v>=T)clearInterval(iv);},20);
+}
+function fmtC(n){if(n>=1e6)return(n/1e6).toFixed(1)+'M';if(n>=1e3)return Math.round(n/1e3)+'K';return Math.round(n).toLocaleString();}
+
+// Dice faces
+function sf(el,n){
+  const b=el.className.replace(/f\d+|fu/g,'').trim();
+  el.className=b+' '+FC[n];
+  el.innerHTML=Array(n).fill('<div class="dot"></div>').join('');
+}
+function su(el){
+  const b=el.className.replace(/f\d+|fu/g,'').trim();
+  el.className=b+' fu';
+  el.innerHTML='<div class="dot"></div>';
+}
+
+// Dice mode switch
+function dMode(m){
+  document.getElementById('dtH').classList.toggle('active',m==='h');
+  document.getElementById('dtV').classList.toggle('active',m==='v');
+  document.getElementById('dH').style.display=m==='h'?'block':'none';
+  document.getElementById('dV').style.display=m==='v'?'block':'none';
+  document.getElementById('rollBtn').style.display=m==='h'?'block':'none';
+  const ag=document.getElementById('vAG').style.display!=='none';
+  document.getElementById('chalBtn').style.display=m==='v'&&!ag?'block':'none';
+  tg?.HapticFeedback?.selectionChanged();
+}
+
+// VS House
+function tn(n,el){
+  const i=hNums.indexOf(n);
+  if(i>-1){hNums.splice(i,1);el.classList.remove('sel');}
+  else{if(hNums.length>=3){toast('Max 3 numbers','err');return;}hNums.push(n);el.classList.add('sel');}
+  uOdds();uRollBtn();tg?.HapticFeedback?.selectionChanged();
+}
+function uOdds(){
+  const n=hNums.length,odds=['-','16.7%','33.3%','50%'],mx=['-','5x','1.8x','1.4x'];
+  const t=TL[hTierIdx],tok='CASHX';
+  if(n===0){g('hPL').textContent='Pick a number to see odds';g('hPO').textContent='-';g('hPM').textContent='-';}
+  else{g('hPL').textContent=`${odds[n]} chance of winning`;g('hPO').textContent=`Bet ${t} ${tok} -> win ${mx[n]} in CASHX`;g('hPM').textContent=mx[n];}
+}
+function uRollBtn(){
+  const b=g('rollBtn');b.disabled=hNums.length===0;
+  b.textContent=hNums.length>0?('Roll - '+TL[hTierIdx]+' CASHX ->'):('Roll the dice ->');
+}
+function setHEnt(t){} // deprecated - CASHX only
+function setHTier(i,el){hTierIdx=i;document.querySelectorAll('#hT .tb').forEach(b=>b.classList.remove('sel'));el.classList.add('sel');uOdds();uRollBtn();tg?.HapticFeedback?.selectionChanged();}
+function roll(){
+  if(hNums.length===0){toast('Pick at least one number','err');return;}
+  tg?.HapticFeedback?.impactOccurred('heavy');g('rollBtn').disabled=true;
+  const d=g('hDice');d.className='dice fu';void d.offsetWidth;d.classList.add('rolling');
+  g('hRC').className='rc';document.querySelectorAll('#hNG .nb2').forEach(b=>b.classList.remove('rolled'));
+  let c=0;const iv=setInterval(()=>{sf(d,Math.floor(Math.random()*6)+1);if(++c>=12){
+    clearInterval(iv);const r=Math.floor(Math.random()*6)+1;
+    d.className='dice fu';void d.offsetWidth;sf(d,r);
+    const w=hNums.includes(r);d.classList.add(w?'won':'lost');
+    document.querySelectorAll('#hNG .nb2').forEach((b,i)=>{if(i+1===r)b.classList.add('rolled');});
+    showHR(r,w);rolls++;if(w)wins++;g('sRolls').textContent=rolls;g('sWins').textContent=wins;
+    tg?.HapticFeedback?.notificationOccurred(w?'success':'error');g('rollBtn').disabled=false;
+  }},70);
+}
+function showHR(r,w){
+  const mx=['','5x','1.8x','1.4x'],t=TL[hTierIdx];
+  const c=g('hRC');c.className=`rc show ${w?'won':'lost'}`;
+  g('hRCe').textContent=w?'🎉':'💀';g('hRCt').className=`rc-ti ${w?'won':'lost'}`;
+  g('hRCt').textContent=w?'Winner!':'Burned';
+  g('hRCa').textContent=w?`${mx[hNums.length]} CASHX`:`${t} CASHX burned`;
+  g('hRCs').textContent=w?`Rolled ${r} - your pick!`:`Rolled ${r} - burned 🔥`;
+}
+
+// 1v1
+function tvn(n,el){
+  document.querySelectorAll('#vNG .nb2').forEach(b=>b.classList.remove('sel'));
+  vNum=n;el.classList.add('sel');sf(g('vPD'),n);
+  const t=TL[vTier_];
+  g('vPL').textContent=`Picked ${n} - closest to roll wins`;
+  g('vPO').textContent='Bet '+t+' CASHX -> win 1.6x in CASHX';
+  g('vPM').textContent='1.6x';
+  g('chalBtn').disabled=false;g('chalBtn').textContent='Challenge with '+n+' CASHX ->';
+  tg?.HapticFeedback?.selectionChanged();
+}
+function vEnt(t){} // deprecated - CASHX only
+function vTier(i,el){vTier_=i;document.querySelectorAll('#vT .tb').forEach(b=>b.classList.remove('sel'));el.classList.add('sel');if(vNum)tvn(vNum,document.querySelectorAll('#vNG .nb2')[vNum-1]);tg?.HapticFeedback?.selectionChanged();}
+function chal(){if(!vNum){toast('Pick a number first','err');return;}tg?.HapticFeedback?.impactOccurred('heavy');toast('Challenge created!','ok');sAG(vNum,null);}
+function jChallenge(c){tg?.HapticFeedback?.impactOccurred('medium');const mp=vNum||(c.pick===6?1:c.pick+1);toast(`Joining - you picked ${mp}`,'ok');sAG(mp,c);}
+function sAG(my,ch){
+  g('vCJ').style.display='none';g('vAG').style.display='block';g('chalBtn').style.display='none';
+  const md=g('myD');md.className='dice';sf(md,my);
+  const od=g('opD');od.className='dice neutral';su(od);
+  g('revC').classList.remove('show');g('vRC').className='rc';
+  g('cdLb').textContent=ch?'Opponent joining...':'Waiting for opponent';
+  sCd(ch?8:3000,()=>{if(ch)simH2H(my,ch.pick);else{toast('No opponent - refunded','err');lag();}});
+}
+function sCd(total,done){
+  clearInterval(cdTimer);let rem=total;
+  function tick(){
+    const m=Math.floor(rem/60).toString().padStart(2,'0'),s=(rem%60).toString().padStart(2,'0');
+    if(g('cdTm'))g('cdTm').textContent=`${m}:${s}`;
+    if(g('cdFi'))g('cdFi').style.width=`${(rem/total)*100}%`;
+    if(rem<=0){clearInterval(cdTimer);done&&done();return;}rem--;
+  }tick();cdTimer=setInterval(tick,1000);
+}
+function simH2H(my,opp){
+  clearInterval(cdTimer);g('cdLb').textContent='Rolling...';
+  const md=g('myD'),od=g('opD');
+  md.className='dice fu';void md.offsetWidth;md.classList.add('rolling');
+  od.className='dice fu';void od.offsetWidth;od.classList.add('rolling');
+  g('vRC').className='rc';g('revC').classList.remove('show');
+  let c=0;const iv=setInterval(()=>{sf(md,Math.floor(Math.random()*6)+1);sf(od,Math.floor(Math.random()*6)+1);
+    if(++c>=12){clearInterval(iv);const r=Math.floor(Math.random()*6)+1;
+      md.className='dice fu';void md.offsetWidth;od.className='dice fu';void od.offsetWidth;
+      sf(md,my);sf(od,opp);
+      const md2=Math.abs(my-r),od2=Math.abs(opp-r),iW=md2<od2,iT=md2===od2;
+      md.classList.add(iW?'won':iT?'neutral':'lost');od.classList.add(!iW&&!iT?'won':iT?'neutral':'lost');
+      showRev(my,opp,r,iW,iT);showH2HR(iW,iT,r,my,opp);tg?.HapticFeedback?.notificationOccurred(iW?'success':'error');
+  }},70);
+}
+function showRev(my,opp,r,iW,iT){
+  g('revC').classList.add('show');
+  const rr=g('rvR');rr.style.cssText='width:40px;height:40px;display:grid;padding:6px;border-radius:8px;background:#141414;border:1px solid #2a2a2a;margin:0 auto 4px;';rr.className='';sf(rr,r);
+  g('rvM').textContent=my;g('rvO').textContent=opp;
+  if(iT){g('rvM').className='rp-pk';g('rvO').className='rp-pk';g('rvML').textContent='Tie';g('rvOL').textContent='Tie';g('rvML').className='rp-lb';g('rvOL').className='rp-lb';}
+  else{g('rvM').className=`rp-pk ${iW?'won':'lost'}`;g('rvO').className=`rp-pk ${!iW?'won':'lost'}`;g('rvML').textContent=iW?'WIN! Closer!':'MISS! Further';g('rvOL').textContent=!iW?'WIN! Closer!':'MISS! Further';g('rvML').className=`rp-lb ${iW?'won':'lost'}`;g('rvOL').className=`rp-lb ${!iW?'won':'lost'}`;}
+}
+function showH2HR(iW,iT,r,my,opp){
+  const t=TL[vTier_],c=g('vRC');
+  if(iT){c.className='rc show tie';g('vRCe').textContent='🤝';g('vRCt').className='rc-ti tie';g('vRCt').textContent='Tie - split!';g('vRCa').textContent=`${t} CASHX each`;g('vRCs').textContent=`Rolled ${r} - equal. 20% burned 🔥`;}
+  else if(iW){c.className='rc show won';g('vRCe').textContent='🏆';g('vRCt').className='rc-ti won';g('vRCt').textContent='You won!';g('vRCa').textContent='1.6x CASHX';g('vRCs').textContent=`Rolled ${r} - your ${my} was closer. 20% burned 🔥`;}
+  else{c.className='rc show lost';g('vRCe').textContent='💀';g('vRCt').className='rc-ti lost';g('vRCt').textContent='You lost';g('vRCa').textContent=`${t} CASHX burned`;g('vRCs').textContent=`Rolled ${r} - their ${opp} was closer.`;}
+  addTM('CashX Bot',iW?'🏆 Winner!':iT?'🤝 Dead even!':'💀 Rekt.');
+}
+function lag(){clearInterval(cdTimer);g('vAG').style.display='none';g('vCJ').style.display='block';g('chalBtn').style.display='block';const m=g('myD');m.className='dice';su(m);const o=g('opD');o.className='dice neutral';su(o);}
+function qt(msg){sTM(msg);tg?.HapticFeedback?.selectionChanged();}
+function st(){const el=g('tiInp');const msg=el.value.trim();if(!msg)return;sTM(msg);el.value='';}
+function sTM(msg){const n=tgu?(tgu.username||tgu.first_name):'You';addTM(n,msg,true);tg?.HapticFeedback?.impactOccurred('light');}
+function addTM(n,t,me=false){const b=g('tmBox');const d=document.createElement('div');d.className=`tm ${me?'me':''}`;d.innerHTML=`<span class="tn">${n}</span><span class="tt">${t}</span>`;b.appendChild(d);b.scrollTop=b.scrollHeight;}
+function rChal(){const l=g('vCL');l.innerHTML='';demos.forEach(c=>{const m=Math.floor(c.exp/60),s=c.exp%60;const d=document.createElement('div');d.className='cc';d.innerHTML=`<div class="cc-top"><div class="cc-av">${c.name[1].toUpperCase()}</div><div style="flex:1"><div class="cc-nm">${c.name}</div><div class="cc-pt">${TL[c.tier]} ${c.entry.toUpperCase()}</div></div><div class="cc-pk">Picked ${c.pick}</div></div><div class="cc-bot"><div class="cc-ti">Expires <span>${m}m ${s}s</span></div><button class="cc-jb" onclick='jChallenge(${JSON.stringify(c)})'>Join -></button></div>`;l.appendChild(d);});}
+
+// Lottery
+function lMode(i,el){lm=i;document.querySelectorAll('#lMG .mp').forEach(p=>p.classList.remove('sel'));el.classList.add('sel');const m=LM[i];g('lPW').textContent=m.w;g('lPR').textContent=m.r;g('lPB').textContent=m.b;g('lSM').textContent=m.l;g('lSE').textContent=m.e;g('lSW').textContent=m.w;tg?.HapticFeedback?.selectionChanged();}
+function lAct(){
+  if(ls===1){
+    const addr='0x'+Array.from(crypto.getRandomValues(new Uint8Array(20))).map(b=>b.toString(16).padStart(2,'0')).join('');
+    g('lDA').textContent=addr;g('lAmt').textContent=LM[lm].e;
+    g('lS1').style.display='none';g('lS2').style.display='block';ls=2;sLS(2);
+    g('lBtn').textContent="I've sent the CASHX ->";tg?.HapticFeedback?.impactOccurred('medium');
+  }else if(ls===2){
+    g('lS2').style.display='none';g('lS3').style.display='block';ls=3;sLS(3);
+    g('lBtn').textContent='Watching for deposit...';g('lBtn').disabled=true;
+    toast('Watching for your deposit!','ok');tg?.HapticFeedback?.impactOccurred('heavy');
+  }
+}
+function lJoin(id){g('lGID').value=id;g('lS1').scrollIntoView({behavior:'smooth'});tg?.HapticFeedback?.selectionChanged();}
+function sLS(n){
+  for(let i=1;i<=3;i++){const d=g(`ls${i}`);if(i<n){d.className='sdot dn';d.textContent='v';}else if(i===n){d.className='sdot act';d.textContent=i;}else{d.className='sdot';d.textContent=i;}}
+  if(g('ll1'))g('ll1').className='sline'+(n>1?' dn':'');
+  if(g('ll2'))g('ll2').className='sline'+(n>2?' dn':'');
+}
+function cpA(){navigator.clipboard.writeText(g('lDA').textContent).then(()=>toast('Address copied','ok')).catch(()=>toast('Failed','err'));}
+function cpAm(){navigator.clipboard.writeText(LM[lm].er.toString()).then(()=>toast('Amount copied','ok')).catch(()=>toast('Failed','err'));}
+
+// Utils
+
+
+
+// -- REFERRAL SYSTEM --
+var referralCode = null;
+var REFERRAL_BONUS_PCT = 5; // 5% of referred user first deposit
+
+function initReferral(){
+  if(!tgu) return;
+  referralCode = 'ref_' + tgu.id;
+  var link = 't.me/CashX_Ai_bot?start=' + referralCode;
+  var el = document.getElementById('refLink');
+  if(el) el.textContent = link;
+  // Load referral stats
+  loadReferralStats();
+  // Check if this user was referred (parse start param from Telegram initData)
+  checkReferral();
+}
+
+function copyRefLink(){
+  if(!tgu){ toast('Login with Telegram first','err'); return; }
+  var link = 't.me/CashX_Ai_bot?start=ref_' + tgu.id;
+  navigator.clipboard.writeText(link)
+    .then(function(){ toast('Referral link copied!','ok'); if(tg&&tg.HapticFeedback)tg.HapticFeedback.notificationOccurred('success'); })
+    .catch(function(){ toast('Copy failed','err'); });
+}
+
+async function loadReferralStats(){
+  if(!tgu) return;
+  try{
+    var res = await fetch(API + '/referral/' + tgu.id);
+    if(!res.ok) return;
+    var data = await res.json();
+    var countEl = document.getElementById('refCount');
+    var totalEl = document.getElementById('refTotal');
+    var earnedEl = document.getElementById('refEarned');
+    if(countEl) countEl.textContent = data.referralCount || 0;
+    if(totalEl) totalEl.textContent = fmtC(parseFloat(data.totalEarned||'0'));
+    if(earnedEl) earnedEl.textContent = '+' + fmtC(parseFloat(data.totalEarned||'0')) + ' CASHX';
+  } catch(e){}
+}
+
+async function checkReferral(){
+  // Telegram passes start param via initDataUnsafe
+  if(!tg || !tg.initDataUnsafe) return;
+  var startParam = tg.initDataUnsafe.start_param || '';
+  if(!startParam.startsWith('ref_')) return;
+  var referrerId = startParam.replace('ref_','');
+  if(referrerId === String(tgu.id)) return; // cant refer yourself
+  // Register referral
+  try{
+    await fetch(API + '/referral/register', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({
+        referrerId: referrerId,
+        refereeId:  String(tgu.id),
+        initData:   tg.initData
+      })
+    });
+  } catch(e){}
+}
+
+// -- ACCOUNT SYSTEM --
+var accountBalance = '0';
+var accountAddress = null;
+
+async function loadAccount(){
+  if(!tgu)return;
+  try{
+    var res=await fetch(API+'/account/deposit-address',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({telegramId:String(tgu.id),initData:tg?tg.initData:''})
+    });
+    var data=await res.json();
+    if(data.address){
+      accountAddress=data.address;
+      accountBalance=data.cashxBalance||'0';
+      updateBalanceDisplay();
+    }
+  }catch(e){
+    // offline - show demo balance
+    accountBalance='0';
+    updateBalanceDisplay();
+  }
+}
+
+async function loadAccountPage(){
+  if(!tgu)return;
+  document.getElementById('meTg').textContent=tgu.username?'@'+tgu.username:tgu.first_name;
+  document.getElementById('meTgId').textContent=tgu.id;
+  try{
+    var res=await fetch(API+'/account/'+tgu.id);
+    var data=await res.json();
+    if(data.cashxBalance!==undefined){
+      accountBalance=data.cashxBalance;
+      updateBalanceDisplay();
+      document.getElementById('meBalance').textContent=fmtC(parseFloat(data.cashxBalance));
+      document.getElementById('meTotalDep').textContent=fmtC(parseFloat(data.totalDeposited||'0'));
+      document.getElementById('meTotalWon').textContent=fmtC(parseFloat(data.totalWon||'0'));
+      document.getElementById('meTotalWag').textContent=fmtC(parseFloat(data.totalWagered||'0'));
+      renderTxHistory(data.history||[]);
+    }
+  }catch(e){
+    document.getElementById('meBalance').textContent='--';
+  }
+  if(accountAddress){
+    document.getElementById('meDepAddr').textContent=accountAddress;
+  }else{
+    await loadAccount();
+    if(accountAddress)document.getElementById('meDepAddr').textContent=accountAddress;
+  }
+}
+
+function updateBalanceDisplay(){
+  var bal=parseFloat(accountBalance)||0;
+  var fmt=fmtC(bal);
+  var ids=['headerBalance','meBalance','diceBalance','lotteryBalance','hiloBalance','jackpotBalance'];
+  for(var i=0;i<ids.length;i++){
+    var el=document.getElementById(ids[i]);
+    if(el)el.textContent=fmt;
+  }
+}
+
+function renderTxHistory(txs){
+  var el=document.getElementById('meTxHistory');
+  if(!el)return;
+  if(!txs||txs.length===0){
+    el.innerHTML='<div class="ir" style="border:none;color:#444;font-size:12px;justify-content:center;">No transactions yet</div>';
+    return;
+  }
+  el.innerHTML=txs.map(function(t){
+    var isCredit=t.type==='credit';
+    var color=isCredit?'#00d395':'#ff4757';
+    var prefix=isCredit?'+':'-';
+    var amt=fmtC(parseFloat(t.amount||'0'));
+    var label=t.note||(t.game?t.game+' '+t.type:t.type);
+    return '<div class="ir"><span class="ik" style="font-size:11px">'+label+'</span><span style="font-size:13px;font-weight:600;color:'+color+'">'+prefix+amt+'</span></div>';
+  }).join('');
+}
+
+function meCopyAddr(){
+  if(!accountAddress){toast('Address loading...','err');return;}
+  navigator.clipboard.writeText(accountAddress)
+    .then(function(){toast('Address copied','ok');if(tg&&tg.HapticFeedback)tg.HapticFeedback.notificationOccurred('success');})
+    .catch(function(){toast('Copy failed','err');});
+}
+
+async function meWithdraw(){
+  var amt=document.getElementById('meWithdrawAmt').value.trim();
+  var addr=document.getElementById('meWithdrawAddr').value.trim();
+  if(!amt||!addr){toast('Enter amount and address','err');return;}
+  if(!addr.match(/^0x[0-9a-fA-F]{40}$/)){toast('Invalid address','err');return;}
+  if(!tgu){toast('Login with Telegram first','err');return;}
+  var bal=parseFloat(accountBalance)||0;
+  if(parseFloat(amt)>bal){toast('Insufficient balance','err');return;}
+  try{
+    var res=await fetch(API+'/account/withdraw',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({telegramId:String(tgu.id),amountEther:amt,toAddress:addr,initData:tg?tg.initData:''})
+    });
+    var data=await res.json();
+    if(data.ok){
+      toast('Withdrawal submitted!','ok');
+      document.getElementById('meWithdrawAmt').value='';
+      document.getElementById('meWithdrawAddr').value='';
+      if(tg&&tg.HapticFeedback)tg.HapticFeedback.notificationOccurred('success');
+      await loadAccountPage();
+    }else{
+      toast(data.error||'Withdrawal failed','err');
+    }
+  }catch(e){
+    toast('Network error','err');
+  }
+}
+
+// Hook into game bets to use balance
+async function deductBet(amountEther, game){
+  if(!tgu)return true; // demo mode
+  try{
+    var res=await fetch(API+'/account/bet',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({telegramId:String(tgu.id),amountEther:amountEther,game:game,initData:tg?tg.initData:''})
+    });
+    var data=await res.json();
+    if(data.ok){
+      accountBalance=data.newBalance;
+      updateBalanceDisplay();
+      return true;
+    }else{
+      toast(data.error||'Insufficient balance','err');
+      return false;
+    }
+  }catch(e){
+    return true; // offline demo mode
+  }
+}
+
+// -- HI-LO --
+var hlEntry='p', hlTierIdx=0, hlStreak_=0, hlCurrentNum=0, hlStarted=false;
+var hlTiers_=[100000,500000,1000000];
+var hlTierLabels_=['100K','500K','1M'];
+var hlMultipliers=[1.0,1.5,2.5,4.0];
+
+function hlSetEntry(t){} // CASHX only
+function hlSetTier(i,el){
+  hlTierIdx=i;
+  document.querySelectorAll('#hlTiers .tb').forEach(function(b){b.classList.remove('sel');});
+  el.classList.add('sel');
+}
+function hlStart(){
+  hlCurrentNum=Math.floor(Math.random()*13)+1;
+  hlStreak_=0;
+  hlStarted=true;
+  var card=document.getElementById('hlCurrentCard');
+  card.textContent=hlCardLabel(hlCurrentNum);
+  card.style.color=hlCurrentNum<=6?'#ff4757':hlCurrentNum>=8?'#00d395':'#ffd700';
+  card.style.borderColor=hlCurrentNum<=6?'#ff4757':hlCurrentNum>=8?'#00d395':'#ffd700';
+  document.getElementById('hlNextCard').textContent='?';
+  document.getElementById('hlNextCard').style.color='#444';
+  document.getElementById('hlNextCard').style.borderColor='#2a2a2a';
+  document.getElementById('hlRC').className='rc';
+  document.getElementById('hlStreak').textContent='0';
+  document.getElementById('hlMult').textContent='1.0x';
+  document.getElementById('hlHighBtn').disabled=false;
+  document.getElementById('hlLowBtn').disabled=false;
+  document.getElementById('hlStartBtn').textContent='Deal again ->';
+  if(tg&&tg.HapticFeedback)tg.HapticFeedback.impactOccurred('medium');
+}
+function hlCardLabel(n){
+  var labels={1:'A',11:'J',12:'Q',13:'K'};
+  return labels[n]||String(n);
+}
+function hlGuess(guess){
+  if(!hlStarted){toast('Deal a card first','err');return;}
+  document.getElementById('hlHighBtn').disabled=true;
+  document.getElementById('hlLowBtn').disabled=true;
+  var next=Math.floor(Math.random()*13)+1;
+  var won=false;
+  if(guess==='high'&&next>hlCurrentNum)won=true;
+  if(guess==='low'&&next<hlCurrentNum)won=true;
+  var tie=(next===hlCurrentNum);
+  // Show next card
+  var nextEl=document.getElementById('hlNextCard');
+  nextEl.textContent=hlCardLabel(next);
+  nextEl.style.color=won?'#00d395':tie?'#ffd700':'#ff4757';
+  nextEl.style.borderColor=won?'#00d395':tie?'#ffd700':'#ff4757';
+  if(tie){
+    showHLResult(false,next,true);
+    hlCurrentNum=next;
+    hlUpdateCurrentCard();
+    setTimeout(function(){
+      document.getElementById('hlHighBtn').disabled=false;
+      document.getElementById('hlLowBtn').disabled=false;
+    },900);
+  } else if(won){
+    hlStreak_++;
+    var multIdx=Math.min(hlStreak_-1,3);
+    var mult=hlMultipliers[multIdx];
+    document.getElementById('hlStreak').textContent=hlStreak_;
+    document.getElementById('hlMult').textContent=mult.toFixed(1)+'x';
+    showHLResult(true,next,false,mult);
+    // Move next card to current after short delay
+    setTimeout(function(){
+      hlCurrentNum=next;
+      hlUpdateCurrentCard();
+      document.getElementById('hlNextCard').textContent='?';
+      document.getElementById('hlNextCard').style.color='#444';
+      document.getElementById('hlNextCard').style.borderColor='#2a2a2a';
+      document.getElementById('hlHighBtn').disabled=false;
+      document.getElementById('hlLowBtn').disabled=false;
+    },900);
+  } else {
+    hlStreak_=0;
+    document.getElementById('hlStreak').textContent='0';
+    document.getElementById('hlMult').textContent='1.0x';
+    showHLResult(false,next,false);
+    hlStarted=false;
+    // Re-enable start button, keep guess buttons disabled until new deal
+    setTimeout(function(){
+      document.getElementById('hlStartBtn').textContent='Deal card to start ->';
+    },900);
+  }
+  if(tg&&tg.HapticFeedback)tg.HapticFeedback.notificationOccurred(won?'success':tie?'warning':'error');
+}
+function hlUpdateCurrentCard(){
+  var card=document.getElementById('hlCurrentCard');
+  card.textContent=hlCardLabel(hlCurrentNum);
+  card.style.color=hlCurrentNum<=4?'#ff4757':hlCurrentNum>=10?'#00d395':'#ffd700';
+  card.style.borderColor=hlCurrentNum<=4?'#ff4757':hlCurrentNum>=10?'#00d395':'#ffd700';
+}
+function showHLResult(won,next,tie,mult){
+  var tier=hlTierLabels_[hlTierIdx];
+  var tok='CASHX';
+  var rc=document.getElementById('hlRC');
+  if(tie){
+    rc.className='rc show tie';
+    document.getElementById('hlRCe').textContent='🤝';
+    document.getElementById('hlRCt').className='rc-ti tie';
+    document.getElementById('hlRCt').textContent='Push - same card';
+    document.getElementById('hlRCa').textContent='No change';
+    document.getElementById('hlRCs').textContent='Card '+hlCardLabel(next)+' - equal. Bet returned.';
+  } else if(won){
+    rc.className='rc show won';
+    document.getElementById('hlRCe').textContent='🎉';
+    document.getElementById('hlRCt').className='rc-ti won';
+    document.getElementById('hlRCt').textContent='Correct! Streak '+hlStreak_;
+    document.getElementById('hlRCa').textContent=mult.toFixed(1)+'x CASHX';
+    document.getElementById('hlRCs').textContent='Card '+hlCardLabel(next)+'. Keep going or cash out!';
+  } else {
+    rc.className='rc show lost';
+    document.getElementById('hlRCe').textContent='💀';
+    document.getElementById('hlRCt').className='rc-ti lost';
+    document.getElementById('hlRCt').textContent='Wrong - burned';
+    document.getElementById('hlRCa').textContent=tier+' '+tok+' burned';
+    document.getElementById('hlRCs').textContent='Card '+hlCardLabel(next)+'. Better luck next round.';
+    hlStarted=false;
+  }
+}
+
+// -- JACKPOT --
+var jpTicketCount_=1;
+var jpTotalTickets=847;
+var jpDrawSeconds=7980; // 2h 14m
+var jpTimer;
+
+function jpInit(){
+  // Generate referral link
+  var tgId=tgu?tgu.id:'unknown';
+  document.getElementById('jpRefLink').textContent='t.me/CashX_Ai_bot?start=ref_'+tgId;
+  // Reset state
+  jpTicketCount_=1;
+  document.getElementById('jpTicketCount').textContent='1';
+  document.getElementById('jpTotalCost').textContent='100K CASHX';
+  document.getElementById('jpWinChance').textContent=((1/jpTotalTickets)*100).toFixed(2)+'%';
+  document.getElementById('jpDepositBox').style.display='none';
+  document.getElementById('jpBuyBtn').textContent='Get deposit address ->';
+  document.getElementById('jpBuyBtn').onclick=jpBuy;
+  // Start countdown (clear old one first)
+  jpStartCountdown();
+}
+function jpStartCountdown(){
+  if(jpTimer)clearInterval(jpTimer);
+  jpTimer=null;
+  var rem=jpDrawSeconds;
+  function jpTick(){
+    var h=Math.floor(rem/3600);
+    var m=Math.floor((rem%3600)/60);
+    var s=rem%60;
+    var el=document.getElementById('jpDrawTime');
+    if(el){
+      if(h>0)el.textContent=h+'h '+m+'m';
+      else el.textContent=m+'m '+s+'s';
+    }
+    if(rem<=0){clearInterval(jpTimer);jpTimer=null;if(el)el.textContent='Drawing!';}
+    rem--;
+  }
+  jpTick();
+  jpTimer=setInterval(jpTick,1000);
+}
+function jpAdjust(delta){
+  jpTicketCount_=Math.max(1,Math.min(10,jpTicketCount_+delta));
+  document.getElementById('jpTicketCount').textContent=jpTicketCount_;
+  var cost=jpTicketCount_*100000;
+  document.getElementById('jpTotalCost').textContent=fmtC(cost)+' CASHX';
+  var chance=((jpTicketCount_/(jpTotalTickets+jpTicketCount_-1))*100).toFixed(2);
+  document.getElementById('jpWinChance').textContent=chance+'%';
+  if(tg&&tg.HapticFeedback)tg.HapticFeedback.selectionChanged();
+}
+function jpBuy(){
+  var addr='0x'+Array.from(crypto.getRandomValues(new Uint8Array(20))).map(function(b){return b.toString(16).padStart(2,'0');}).join('');
+  document.getElementById('jpDepAddr').textContent=addr;
+  var cost=jpTicketCount_*100000;
+  document.getElementById('jpDepAmt').textContent=(cost/1000).toFixed(0)+'K CASHX';
+  document.getElementById('jpDepositBox').style.display='block';
+  document.getElementById('jpBuyBtn').textContent='I sent the CASHX ->';
+  document.getElementById('jpBuyBtn').onclick=jpConfirm;
+  if(tg&&tg.HapticFeedback)tg.HapticFeedback.impactOccurred('medium');
+}
+function jpConfirm(){
+  document.getElementById('jpMyTickets').innerHTML='<div style="font-size:28px;font-weight:600;color:#b44fff;">'+jpTicketCount_+'</div><div style="font-size:12px;color:#444;margin-top:4px;">tickets entered</div>';
+  document.getElementById('jpDepositBox').style.display='none';
+  document.getElementById('jpBuyBtn').textContent='Buy more tickets ->';
+  document.getElementById('jpBuyBtn').onclick=jpBuy;
+  toast('Watching for deposit!','ok');
+  if(tg&&tg.HapticFeedback)tg.HapticFeedback.notificationOccurred('success');
+}
+function jpCopyAddr(){
+  navigator.clipboard.writeText(document.getElementById('jpDepAddr').textContent)
+    .then(function(){toast('Address copied','ok');}).catch(function(){toast('Copy failed','err');});
+}
+function jpCopyRef(){
+  navigator.clipboard.writeText(document.getElementById('jpRefLink').textContent)
+    .then(function(){toast('Referral link copied!','ok');}).catch(function(){toast('Copy failed','err');});
+}
 
 function g(id){return document.getElementById(id);}
-function toast(msg,type=''){const t=g('toast');t.textContent=msg;t.className='show'+(type?' '+type:'');setTimeout(()=>t.className='',2800);}
-// ... rest of your script ...
+function toggleFaq(el){
+  try{
+    var ans=el.querySelector('.faq-a');
+    var arr=el.querySelector('.faq-arr');
+    if(!ans||!arr)return;
+    var open=ans.style.display==='block';
+    ans.style.display=open?'none':'block';
+    arr.style.transform=open?'':'rotate(180deg)';
+    if(tg&&tg.HapticFeedback)tg.HapticFeedback.selectionChanged();
+  }catch(e){}
+}
+// Attach FAQ click handlers after DOM ready
+function initFaq(){
+  for(var i=0;i<5;i++){
+    var el=document.getElementById('faq'+i);
+    if(el)(function(e){e.addEventListener('click',function(){toggleFaq(e);});})(el);
+  }
+}
+let toastT;
+function toast(msg,type=''){const t=g('toast');t.textContent=msg;t.className='show'+(type?' '+type:'');clearTimeout(toastT);toastT=setTimeout(()=>t.className='',2800);}
 </script>
-
 </body>
 </html>
