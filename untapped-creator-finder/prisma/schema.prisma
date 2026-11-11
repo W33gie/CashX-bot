@@ -1,0 +1,446 @@
+// Untapped Creator Finder - data model
+//
+// Two layers:
+//   1. Shared creator intelligence (Creator, PlatformAccount, MetricSnapshot,
+//      ContentItem, CommercialSignal, CreatorScore, OpportunityAnalysis).
+//      Facts about the public world. Collected once, reused by every workspace.
+//   2. Workspace-private CRM data (Prospect, Note, ProspectList, ActivityEvent).
+//      What *your team* thinks and does about a creator.
+//
+// Every fact that feeds a score records where it came from (source) and
+// whether it was observed directly or inferred (EvidenceKind).
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ---------------------------------------------------------------------------
+// Auth (managed by better-auth - field names follow its schema)
+// ---------------------------------------------------------------------------
+
+model User {
+  id            String       @id
+  name          String
+  email         String       @unique
+  emailVerified Boolean      @default(false)
+  image         String?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  sessions      Session[]
+  accounts      Account[]
+  memberships   Membership[]
+  notes         Note[]
+
+  @@map("user")
+}
+
+model Session {
+  id        String   @id
+  expiresAt DateTime
+  token     String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  ipAddress String?
+  userAgent String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("session")
+}
+
+model Account {
+  id                    String    @id
+  accountId             String
+  providerId            String
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@index([userId])
+  @@map("account")
+}
+
+model Verification {
+  id         String   @id
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([identifier])
+  @@map("verification")
+}
+
+// ---------------------------------------------------------------------------
+// Tenancy
+// ---------------------------------------------------------------------------
+
+enum MemberRole {
+  OWNER
+  ADMIN
+  MEMBER
+}
+
+model Workspace {
+  id          String          @id @default(cuid())
+  name        String
+  createdAt   DateTime        @default(now())
+  memberships Membership[]
+  prospects   Prospect[]
+  lists       ProspectList[]
+  notes       Note[]
+  activity    ActivityEvent[]
+}
+
+model Membership {
+  id          String     @id @default(cuid())
+  workspaceId String
+  userId      String
+  role        MemberRole @default(MEMBER)
+  createdAt   DateTime   @default(now())
+  workspace   Workspace  @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, userId])
+  @@index([userId])
+}
+
+// ---------------------------------------------------------------------------
+// Creator intelligence (shared)
+// ---------------------------------------------------------------------------
+
+enum Platform {
+  YOUTUBE
+  INSTAGRAM
+  TIKTOK
+}
+
+/// Where a piece of data came from. MANUAL = typed in by a user.
+/// DEMO = fictional sample data; never mixed into real analysis.
+enum DataSource {
+  MANUAL
+  DEMO
+  YOUTUBE_API
+  INSTAGRAM_GRAPH_API
+  TIKTOK_RESEARCH_API
+  THIRD_PARTY_PROVIDER
+  CSV_IMPORT
+}
+
+enum EvidenceKind {
+  OBSERVED // seen directly in public data (e.g. "#ad" in a caption)
+  INFERRED // derived by a rule or model (e.g. "likely has a course")
+}
+
+/// A person/brand. May own accounts on several platforms.
+model Creator {
+  id           String               @id @default(cuid())
+  displayName  String
+  primaryNiche String?
+  niches       String[]
+  country      String? // ISO 3166-1 alpha-2
+  language     String? // ISO 639-1
+  bio          String?
+  websiteUrl   String?
+  isDemo       Boolean              @default(false)
+  createdById  String?
+  discoveredAt DateTime             @default(now())
+  updatedAt    DateTime             @updatedAt
+
+  // --- Rollups -------------------------------------------------------------
+  // Denormalised from accounts/snapshots/signals/scores by refreshRollup()
+  // so the creator table can filter and sort fast without joins.
+  // NULL always means "unknown", never zero.
+  platforms             Platform[]
+  totalFollowers        Int?
+  engagementRate        Float? // follower-weighted across accounts
+  followerGrowth30d     Float? // fractional change, from MetricSnapshot history
+  lastPostAt            DateTime?
+  commercialSignalCount Int       @default(0)
+  saturationScore       Int?
+  opportunityScore      Int?
+  scoreConfidence       Float?
+  scoredAt              DateTime?
+
+  accounts  PlatformAccount[]
+  signals   CommercialSignal[]
+  scores    CreatorScore[]
+  analyses  OpportunityAnalysis[]
+  prospects Prospect[]
+
+  @@index([primaryNiche])
+  @@index([country])
+  @@index([discoveredAt])
+  @@index([totalFollowers])
+  @@index([engagementRate])
+  @@index([opportunityScore])
+  @@index([saturationScore])
+}
+
+/// One creator's presence on one platform, with the latest known metrics.
+model PlatformAccount {
+  id             String           @id @default(cuid())
+  creatorId      String
+  platform       Platform
+  handle         String
+  externalId     String? // platform's own id, when known
+  url            String
+  followers      Int?
+  avgViews       Int? // mean views over recent posts
+  engagementRate Float? // (likes+comments)/views over recent posts, 0..1
+  postsLast30d   Int?
+  lastPostAt     DateTime?
+  source         DataSource
+  fetchedAt      DateTime?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  creator        Creator          @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+  snapshots      MetricSnapshot[]
+  content        ContentItem[]
+
+  @@unique([platform, handle])
+  @@index([creatorId])
+  @@index([followers])
+}
+
+/// Point-in-time metrics. Growth is computed from these - never guessed.
+model MetricSnapshot {
+  id             String          @id @default(cuid())
+  accountId      String
+  capturedAt     DateTime        @default(now())
+  followers      Int?
+  avgViews       Int?
+  engagementRate Float?
+  source         DataSource
+  account        PlatformAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  @@index([accountId, capturedAt])
+}
+
+/// A public post/video. Text is kept so commercial signals can be re-derived.
+model ContentItem {
+  id          String          @id @default(cuid())
+  accountId   String
+  externalId  String
+  url         String?
+  title       String?
+  text        String? // caption / description
+  publishedAt DateTime?
+  views       Int?
+  likes       Int?
+  comments    Int?
+  source      DataSource
+  fetchedAt   DateTime        @default(now())
+  account     PlatformAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  signals     CommercialSignal[]
+
+  @@unique([accountId, externalId])
+  @@index([accountId, publishedAt])
+}
+
+enum SignalType {
+  SPONSORSHIP
+  AFFILIATE
+  DIGITAL_PRODUCT
+  COURSE
+  MEMBERSHIP
+  SERVICE
+  MERCH
+  BRAND_PARTNERSHIP
+  BUSINESS_CONTACT // public business email / "for inquiries"
+  TALENT_MANAGEMENT // agency or manager listed
+}
+
+/// One piece of evidence that a creator is already monetising.
+model CommercialSignal {
+  id            String       @id @default(cuid())
+  creatorId     String
+  contentItemId String?
+  type          SignalType
+  evidenceKind  EvidenceKind
+  evidence      String // the exact text/snippet or reasoning
+  sourceUrl     String?
+  confidence    Float        @default(1) // 0..1
+  source        DataSource
+  observedAt    DateTime     @default(now())
+  creator       Creator      @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+  contentItem   ContentItem? @relation(fields: [contentItemId], references: [id], onDelete: SetNull)
+
+  @@index([creatorId, type])
+}
+
+enum ScoreKind {
+  SATURATION
+  OPPORTUNITY
+}
+
+/// Output of the scoring engine (Phase 3). History is kept: one row per run.
+/// value is NULL when there is not enough evidence to score honestly.
+model CreatorScore {
+  id          String    @id @default(cuid())
+  creatorId   String
+  kind        ScoreKind
+  value       Int? // 0..100, null = insufficient data
+  confidence  Float // 0..1, driven by data completeness & reliability
+  version     String // algorithm version, e.g. "saturation-v1"
+  breakdown   Json // [{ factor, value, weight, contribution, evidenceKind, note }]
+  missingData String[] // what would raise confidence
+  computedAt  DateTime  @default(now())
+  creator     Creator   @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+
+  @@index([creatorId, kind, computedAt])
+  @@index([kind, value])
+}
+
+/// AI-generated opportunity analysis (Phase 4). Always labelled as inference.
+model OpportunityAnalysis {
+  id                  String   @id @default(cuid())
+  creatorId           String
+  model               String
+  promptVersion       String
+  audienceInterests   Json
+  unmetNeeds          Json
+  opportunities       Json // [{ title, rationale, evidence[] }] x3
+  partnershipApproach String
+  evidence            Json
+  createdAt           DateTime @default(now())
+  creator             Creator  @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+
+  @@index([creatorId, createdAt])
+}
+
+// ---------------------------------------------------------------------------
+// Workspace CRM
+// ---------------------------------------------------------------------------
+
+enum ProspectStatus {
+  NEW
+  RESEARCHING
+  QUALIFIED
+  CONTACTED
+  IN_CONVERSATION
+  PARTNERED
+  NOT_A_FIT
+}
+
+/// A workspace's relationship with a creator.
+model Prospect {
+  id          String             @id @default(cuid())
+  workspaceId String
+  creatorId   String
+  status      ProspectStatus     @default(NEW)
+  saved       Boolean            @default(false)
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+  workspace   Workspace          @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  creator     Creator            @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+  listItems   ProspectListItem[]
+
+  @@unique([workspaceId, creatorId])
+  @@index([workspaceId, status])
+  @@index([workspaceId, saved])
+}
+
+model Note {
+  id          String    @id @default(cuid())
+  workspaceId String
+  creatorId   String
+  authorId    String
+  body        String
+  createdAt   DateTime  @default(now())
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  author      User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId, creatorId, createdAt])
+}
+
+model ProspectList {
+  id          String             @id @default(cuid())
+  workspaceId String
+  name        String
+  description String?
+  createdAt   DateTime           @default(now())
+  workspace   Workspace          @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  items       ProspectListItem[]
+
+  @@unique([workspaceId, name])
+}
+
+model ProspectListItem {
+  listId     String
+  prospectId String
+  addedAt    DateTime     @default(now())
+  list       ProspectList @relation(fields: [listId], references: [id], onDelete: Cascade)
+  prospect   Prospect     @relation(fields: [prospectId], references: [id], onDelete: Cascade)
+
+  @@id([listId, prospectId])
+}
+
+// ---------------------------------------------------------------------------
+// Automation foundation (used now for audit; by agents in Phase 6)
+// ---------------------------------------------------------------------------
+
+enum ActorType {
+  USER
+  AGENT
+  SYSTEM
+}
+
+/// Append-only activity log. Every user *and future agent* action lands here,
+/// so automated work is always attributable and reviewable.
+model ActivityEvent {
+  id          String    @id @default(cuid())
+  workspaceId String
+  actorType   ActorType
+  actorId     String?
+  creatorId   String?
+  type        String // e.g. "prospect.status_changed"
+  payload     Json?
+  createdAt   DateTime  @default(now())
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId, createdAt])
+  @@index([creatorId])
+}
+
+enum JobStatus {
+  QUEUED
+  RUNNING
+  SUCCEEDED
+  FAILED
+  CANCELLED
+}
+
+/// Postgres-backed job queue for discovery runs, scoring and future agents.
+/// Cheap (no Redis) and good enough until volume demands otherwise.
+model Job {
+  id          String    @id @default(cuid())
+  type        String // "discovery.youtube", "score.creator", "agent.research", ...
+  status      JobStatus @default(QUEUED)
+  workspaceId String?
+  payload     Json
+  result      Json?
+  error       String?
+  attempts    Int       @default(0)
+  runAt       DateTime  @default(now())
+  startedAt   DateTime?
+  finishedAt  DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@index([status, runAt])
+}
